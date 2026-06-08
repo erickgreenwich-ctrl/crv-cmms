@@ -8,7 +8,7 @@ const DEFAULT_INTERVALS = [
   { id: 'oil',       name: 'Engine Oil & Filter',           intervalKm: 5000,   lastDoneKm: 156000 },
   { id: 'cvt',       name: 'CVT Fluid Pan-Drop',            intervalKm: 100000, lastDoneKm: 150000 },
   { id: 'cvtfluid',  name: 'CVT Fluid Change',              intervalKm: 30000,  lastDoneKm: 150000 },
-  { id: 'diff',      name: 'Rear Differential Fluid',       intervalKm: 50000,  lastDoneKm: 120000 },
+  { id: 'diff',      name: 'Rear Differential Fluid',       intervalKm: 50000,  lastDoneKm: 120000 }, // due at 170,000 km
   { id: 'brakes',    name: 'Brakes & Chassis Inspection',   intervalKm: 20000,  lastDoneKm: 150000 },
   { id: 'coolant',   name: 'Engine Coolant',                intervalKm: 50000,  lastDoneKm: 120000 },
   { id: 'brakefld',  name: 'Brake Fluid',                   intervalKm: 50000,  lastDoneKm: 130000 },
@@ -24,9 +24,27 @@ const DEFAULT_INTERVALS = [
   { id: 'caliper',   name: 'Caliper Slides & Hardware',     intervalKm: 40000,  lastDoneKm: 130000 },
 ]
 
+const INITIAL_HISTORY = [
+  { id: 'h-001', serviceId: 'brakes',    title: 'Brakes & Chassis Inspection', type: 'scheduled', doneKm: 150000, date: '2024-01-01T00:00:00.000Z', comment: 'Inspection at 150,000 km.', photos: [], totalPhotos: 0 },
+  { id: 'h-002', serviceId: 'cvt',       title: 'CVT Fluid Pan-Drop',          type: 'scheduled', doneKm: 150000, date: '2024-01-01T00:00:00.000Z', comment: 'Honda HCF-2, 4.5 qt. Filter 25420-5LJ-003. Gasket 21814-RJ2-003. TOP Filter 25450-P4V-013.', photos: [], totalPhotos: 0 },
+  { id: 'h-003', serviceId: 'oil',       title: 'Engine Oil & Filter',          type: 'scheduled', doneKm: 156000, date: '2024-03-01T00:00:00.000Z', comment: 'Liquimoly 0W-20 full synthetic, 4.4L. Filter 15400-PLM-A02.', photos: [], totalPhotos: 0 },
+  { id: 'h-004', serviceId: 'pcv',       title: 'PCV Valve',                    type: 'scheduled', doneKm: 140000, date: '2023-06-01T00:00:00.000Z', comment: 'OEM 17130-5A2-A01. Heat soaked before removal — came out OK.', photos: [], totalPhotos: 0 },
+  { id: 'h-005', serviceId: 'belt',      title: 'Serpentine Belt',              type: 'scheduled', doneKm: 130000, date: '2023-01-01T00:00:00.000Z', comment: 'Belt replaced at 130,000 km.', photos: [], totalPhotos: 0 },
+  { id: 'h-006', serviceId: 'sparkplug', title: 'Spark Plugs & Valve Adjust',   type: 'scheduled', doneKm: 100000, date: '2021-01-01T00:00:00.000Z', comment: 'Done with Honda dealer. NGK iridium plugs installed.', photos: [], totalPhotos: 0 },
+  { id: 'h-007', serviceId: 'coolant',   title: 'Engine Coolant',               type: 'scheduled', doneKm: 120000, date: '2022-06-01T00:00:00.000Z', comment: 'Done with Honda dealer. Honda Type 2 blue coolant.', photos: [], totalPhotos: 0 },
+  { id: 'h-008', serviceId: 'brakefld',  title: 'Brake Fluid',                  type: 'scheduled', doneKm: 130000, date: '2023-01-01T00:00:00.000Z', comment: 'DOT 3 full flush at 130,000 km. Overdue again now at 150,000 km.', photos: [], totalPhotos: 0 },
+  { id: 'h-009', serviceId: 'brakefld',  title: 'Brake Fluid',                  type: 'scheduled', doneKm: 30000,  date: '2019-01-01T00:00:00.000Z', comment: 'First brake fluid service.', photos: [], totalPhotos: 0 },
+  { id: 'h-010', serviceId: 'diff',      title: 'Rear Differential Fluid',      type: 'scheduled', doneKm: 120000, date: '2022-06-01T00:00:00.000Z', comment: 'Honda DPS-F fluid. Fill to overflow. Drain plug magnets clean.', photos: [], totalPhotos: 0 },
+  { id: 'h-011', serviceId: 'diff',      title: 'Rear Differential Fluid',      type: 'scheduled', doneKm: 70000,  date: '2020-01-01T00:00:00.000Z', comment: 'Honda DPS-F fluid.', photos: [], totalPhotos: 0 },
+  { id: 'h-012', serviceId: 'cvt',       title: 'CVT Fluid Pan-Drop',           type: 'scheduled', doneKm: 120000, date: '2022-06-01T00:00:00.000Z', comment: 'Honda HCF-2. Filter 25420-RJ2-004. TOP Filter 25450-P4V-013.', photos: [], totalPhotos: 0 },
+  { id: 'h-013', serviceId: 'cvt',       title: 'CVT Fluid Pan-Drop',           type: 'scheduled', doneKm: 70000,  date: '2020-01-01T00:00:00.000Z', comment: 'Honda HCF-2 fluid.', photos: [], totalPhotos: 0 },
+  { id: 'h-014', serviceId: 'brakes',    title: 'Brakes & Chassis Inspection',  type: 'scheduled', doneKm: 125000, date: '2022-09-01T00:00:00.000Z', comment: 'Inspection at 125,000 km.', photos: [], totalPhotos: 0 },
+  { id: 'h-015', serviceId: 'brakes',    title: 'Brakes & Chassis Inspection',  type: 'scheduled', doneKm: 105000, date: '2021-06-01T00:00:00.000Z', comment: 'Inspection at 105,000 km.', photos: [], totalPhotos: 0 },
+]
+
 const DEFAULT_STATE = {
   currentKm: 150000, weeklyLog: [], workOrders: PRESET_WORK_ORDERS,
-  maintenanceLog: [], lastUpdated: new Date().toISOString()
+  maintenanceLog: INITIAL_HISTORY, lastUpdated: new Date().toISOString()
 }
 
 function getStatus(item, km) {
