@@ -1,543 +1,693 @@
-// Pre-built work orders — 2018 Honda CR-V AWD 1.5T
-// Updated from Erick's maintenance schedule — White River, Ontario
+import { useState, useEffect, useRef } from 'react'
+import { loadFromDrive, saveToDrive } from './driveSync'
+import { PRESET_WORK_ORDERS } from './workOrders'
 
-export const PRESET_WORK_ORDERS = [
+const VEHICLE = { year: 2018, make: 'Honda', model: 'CR-V', trim: 'AWD 1.5T', targetKm: 500000 }
 
-  // ── OVERDUE ──────────────────────────────────────────────
-  {
-    id: 'wo-brakefld',
-    title: 'Brake Fluid Replacement',
-    priority: 'high',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'OVERDUE since 130,000 km. Brake fluid is hygroscopic — absorbs moisture over time, lowering boiling point and corroding calipers and master cylinder. DOT 3 minimum; DOT 4 acceptable and offers higher boiling point. Flush completely — never top up contaminated fluid.',
-    procedure: [
-      'Gather: DOT 3 or DOT 4 brake fluid (2 bottles), clear vinyl tubing ~30cm, catch bottle, turkey baster or fluid transfer pump, 8mm or 10mm wrench, nitrile gloves, shop rags.',
-      'Park on level ground, engine off, parking brake applied.',
-      'Open hood. Locate brake fluid reservoir on driver-side firewall. Check fluid color — dark brown or black means heavily contaminated.',
-      'Use turkey baster to remove as much old fluid as possible from reservoir. Do NOT let reservoir run completely dry.',
-      'Fill reservoir to MAX line with fresh fluid.',
-      'Bleed order (furthest from master cylinder first): Rear Passenger → Rear Driver → Front Passenger → Front Driver.',
-      'For each wheel: lift vehicle, locate bleeder screw on caliper, attach clear tubing to bleeder nipple, submerge other end in catch bottle with a bit of old fluid to prevent air suck-back.',
-      'Have assistant slowly press brake pedal to floor and hold. Open bleeder 1/4 turn — dark fluid flows out. Close bleeder BEFORE assistant releases pedal. Repeat until fluid runs clear and bubble-free (typically 4–6 pumps per wheel).',
-      'After each wheel, check reservoir and top up — never let it drop below MIN.',
-      'Torque bleeder screws: 8–10 N·m. Do not overtighten — they strip easily.',
-      'Reinstall wheels. Torque lug nuts: 108 N·m in star pattern.',
-      'Pump brake pedal several times until firm. Check for leaks under vehicle.',
-      'Test pedal feel — should be firm before moving vehicle.',
-      'Dispose of old fluid at recycling center — do not pour down drain.',
-    ],
-    parts: [
-      { partNumber: '08798-9008', description: 'Honda DOT 3 Brake Fluid 500mL', qty: 2, unit: 'bottle' },
-      { partNumber: 'N/A', description: 'Clear vinyl tubing ~30cm (bleeding tool)', qty: 1, unit: 'piece' },
-    ],
-  },
-
-  {
-    id: 'wo-diff',
-    title: 'Rear Differential Fluid Replacement',
-    priority: 'high',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'OVERDUE — last done at 100,000 km, due at 150,000 km. The AWD system uses Honda DPS-F (Dual Pump System Fluid) — do NOT substitute with generic ATF or any other fluid. Wrong fluid causes AWD shudder, clutch pack wear, and premature failure. Fill to overflow — do not guess the quantity.',
-    procedure: [
-      'Warm up vehicle with a 10-minute drive — warm fluid drains more completely.',
-      'Lift vehicle on jack stands or ramps. Must be level for accurate fill.',
-      'Locate rear differential — aluminum housing under rear axle between rear driveshafts.',
-      'CRITICAL: Locate FILL plug first (upper plug, 3/8" square drive). Confirm you can open it BEFORE opening drain plug. Never drain a diff you cannot refill.',
-      'Remove fill plug. Inspect thread condition.',
-      'Place drain pan under diff. Remove DRAIN plug (lower plug, 3/8" square drive). Allow full drain — 5–10 minutes.',
-      'Inspect drain plug magnet for metal particles. Fine gray sludge is normal. Large metallic chunks indicate bearing wear — investigate further.',
-      'Clean drain plug threads. Install new sealing washer.',
-      'Reinstall drain plug. Torque: 40 N·m.',
-      'Using fluid pump through fill hole, add Honda DPS-F until fluid seeps out of fill hole — this is the correct level.',
-      'Reinstall fill plug with new sealing washer. Torque: 40 N·m.',
-      'Wipe clean. Lower vehicle.',
-      'Test drive — include low-speed turns to verify no AWD shudder or binding.',
-    ],
-    parts: [
-      { partNumber: '08200-9007', description: 'Honda DPS-F Dual Pump Fluid 1L', qty: 1, unit: 'bottle' },
-      { partNumber: '90471-PX4-000', description: 'Drain/Fill Plug Sealing Washer (need 2)', qty: 2, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-carbon',
-    title: 'Intake Valve Carbon Deposit Cleaning',
-    priority: 'high',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'OVERDUE. The 1.5T is a GDI (Gasoline Direct Injection) engine — fuel is injected directly into the cylinder and never touches the intake valves, so carbon deposits accumulate on the back of the valves over time. Buildup causes rough idle, misfires, reduced power, and poor fuel economy. Walnut shell blasting is the proper method. This is a shop job unless you have the specialized blasting equipment.',
-    procedure: [
-      'NOTE: This service requires walnut shell blasting equipment. If you do not have this tool, take to a trusted shop. Estimated cost $200–$400. Describe the service as "GDI intake valve walnut blast cleaning."',
-      'If doing DIY with blasting kit: disconnect intake hose from throttle body.',
-      'Remove intake manifold to access intake ports (8mm bolts, note vacuum line locations before removal).',
-      'Rotate engine so cylinder 1 intake valves are closed (both valves seated). Use blasting wand in intake port.',
-      'Blast walnut shells at closed valves — shell fragments break off carbon deposits without damaging valve seats.',
-      'Vacuum out all walnut shell debris from port before moving to next cylinder.',
-      'Repeat for all 4 cylinders, rotating engine to close each cylinder\'s intake valves before blasting.',
-      'Inspect ports with flashlight — valves should appear clean and shiny.',
-      'Reinstall intake manifold with new gasket if old gasket shows any damage.',
-      'Reconnect all vacuum lines and intake hose.',
-      'Start engine — expect rough idle for 1–2 minutes as remaining debris clears.',
-      'Check for intake manifold vacuum leaks with smoke test or carb cleaner (carefully).',
-      'Note: Use top-tier fuel going forward (Petro-Canada, Shell V-Power) and consider catch can installation to reduce future buildup.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'Intake manifold gasket set (replace if disturbed)', qty: 1, unit: 'set' },
-      { partNumber: 'N/A', description: 'Walnut shell blast media (if DIY)', qty: 1, unit: 'bag' },
-    ],
-  },
-
-  {
-    id: 'wo-swaybar',
-    title: 'Sway Bar End Links Inspection & Replacement',
-    priority: 'high',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'OVERDUE by mileage. Sway bar end links connect the sway bar to the strut assembly. Worn end links cause clunking over bumps, especially on White River gravel roads. Typical failure at 150,000–200,000 km in harsh climates. Inspect first — replace if worn, loose, or if rubber boot is cracked.',
-    procedure: [
-      'Lift vehicle on jack stands. Safely support vehicle — do not work under vehicle on jack only.',
-      'Locate front sway bar end links — one per side, connecting sway bar to bottom of strut.',
-      'Inspect rubber boots on each end link ball joint — cracking or torn boots mean the joint is contaminated and worn.',
-      'Grab each end link and check for play — any looseness means replacement is needed.',
-      'Check for clunking by pushing/pulling on sway bar while someone rocks the vehicle.',
-      'To replace: hold center of end link with 6mm hex key to prevent spinning, remove upper nut (14mm) and lower nut (14mm).',
-      'Remove old end link.',
-      'Install new end link — hand tighten both ends first.',
-      'Torque end link nuts: 38–44 N·m. Hold center stud with hex key to prevent spinning.',
-      'Repeat on other side.',
-      'Lower vehicle. Test drive on rough surface — clunking should be eliminated.',
-    ],
-    parts: [
-      { partNumber: '51320-TLA-A01', description: 'Front Sway Bar End Link Left', qty: 1, unit: 'each' },
-      { partNumber: '51320-TLA-A11', description: 'Front Sway Bar End Link Right', qty: 1, unit: 'each' },
-    ],
-  },
-
-  // ── DUE SOON ─────────────────────────────────────────────
-  {
-    id: 'wo-oil',
-    title: 'Engine Oil & Filter Change — Liquimoly 0W-20',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Next due at 164,000 km (5,000 km interval — White River winter protocol). The 1.5T is known for oil dilution in cold climates — gasoline seeps into oil during short cold-weather trips, thinning the lubricant. Use Liquimoly 0W-20 full synthetic as specified. During winter months, check oil level AND smell monthly. If oil smells like gasoline or is above MAX on dipstick, change immediately regardless of km.',
-    procedure: [
-      'Gather: Liquimoly 0W-20 full synthetic 5L, oil filter 15400-PLM-A02, drain plug washer 90471-PX4-000, drain pan, 17mm socket, oil filter wrench, funnel, gloves.',
-      'Warm engine 5 minutes — warm oil drains faster and carries more contaminants out.',
-      'Lift vehicle on ramps or jack stands.',
-      'Remove oil filler cap on top of engine — this prevents vacuum slowing the drain.',
-      'Place drain pan under oil pan. Remove drain plug (17mm) — counterclockwise. Allow full drain (5+ minutes).',
-      'Move drain pan under oil filter on passenger side of engine block. Remove filter with wrench — counterclockwise. Expect oil spillage.',
-      'Before installing new filter: apply thin film of fresh oil to new filter rubber gasket.',
-      'Install new filter hand-tight + 3/4 additional turn. Do NOT use wrench to tighten.',
-      'Install new drain plug washer. Reinstall drain plug. Torque: 30 N·m. Do not overtighten.',
-      'Lower vehicle.',
-      'Add 4.4L of Liquimoly 0W-20 through filler cap. Install cap.',
-      'Start engine. Oil pressure warning light should extinguish within 3 seconds. If it stays on after 5 seconds — shut off immediately.',
-      'Check under vehicle for leaks at drain plug and filter.',
-      'Shut off engine. Wait 3 minutes. Check dipstick — should read between MIN and MAX lines.',
-      'Reset oil life indicator: hold TRIP button on instrument cluster with ignition on until oil life resets, or through infotainment Settings menu.',
-      'Record date, odometer, and oil brand in Oil Change Log tab of your Excel file.',
-    ],
-    parts: [
-      { partNumber: '15400-PLM-A02', description: 'OEM Honda Oil Filter — 1.5T Engine', qty: 1, unit: 'each' },
-      { partNumber: '90471-PX4-000', description: 'Drain Plug Sealing Washer', qty: 1, unit: 'each' },
-      { partNumber: 'N/A', description: 'Liquimoly 0W-20 Full Synthetic', qty: 5, unit: 'L' },
-    ],
-  },
-
-  {
-    id: 'wo-tires',
-    title: 'Tire Rotation',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 160,000 km. CRITICAL on AWD — the Real Time AWD rear coupling is sensitive to tire circumference differences between axles. Uneven tread wear overworks the rear coupling and causes premature failure. Check sidewall for directional arrow before rotating — directional tires cannot be crossed side to side.',
-    procedure: [
-      'Check sidewall of each tire for directional arrow. If present: front-to-rear only (same side). If no arrow: full X-pattern rotation.',
-      'Loosen all lug nuts slightly while tires are on ground. Torque: 108 N·m (80 ft·lb).',
-      'Lift vehicle. Use proper jack points per owner manual. Support on jack stands.',
-      'Remove all 4 wheels.',
-      'Inspect each tire: tread depth (min 3mm, 4mm for winter), sidewall cracking, bulges, uneven wear patterns. Record findings.',
-      'Inspect brake components while wheels are off: rotor thickness and scoring, pad thickness, caliper slide condition.',
-      'Inspect CV axle boots for cracking or grease fling.',
-      'Check sway bar end links and ball joints for play.',
-      'NON-DIRECTIONAL rotation (X-pattern): Front Right → Rear Left. Front Left → Rear Right. Rear Right → Front Left. Rear Left → Front Right.',
-      'DIRECTIONAL rotation: Front Right → Rear Right. Front Left → Rear Left.',
-      'Reinstall wheels. Hand-tighten lug nuts in star pattern.',
-      'Lower vehicle to ground.',
-      'Torque lug nuts to 108 N·m in star pattern. Two full passes recommended.',
-      'Check and adjust tire pressure — 33 PSI cold all around for 235/60R18.',
-      'Test drive. Listen for vibration or pulling. If present, re-check torque and consider balance.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'No parts required — service only', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-cabinair',
-    title: 'Cabin Air Filter Replacement',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 170,000 km (20,000 km interval). A clogged cabin filter reduces HVAC airflow, makes the blower motor work harder, and allows unfiltered air into the cabin. In White River conditions — insects, dust, pollen, road debris — inspect every 15,000 km even if not replacing.',
-    procedure: [
-      'Open glove box and empty it completely.',
-      'Squeeze both sides of the glove box inward — compressing the side tabs — to allow it to swing fully down past the stop tabs.',
-      'The cabin air filter housing is now visible — a rectangular cover with a tab or clip on the right side.',
-      'Release the clip and slide out the old filter. Note the airflow direction arrow printed on the filter frame.',
-      'Inspect housing interior for debris, insects, leaves — wipe out with dry cloth if needed.',
-      'Insert new filter with arrow pointing DOWN (airflow direction is toward blower motor).',
-      'Close filter housing cover and engage clip.',
-      'Swing glove box back up — squeeze sides to re-engage stop tabs. Reload contents.',
-      'Turn on HVAC fan to full speed and verify improved airflow.',
-    ],
-    parts: [
-      { partNumber: '80292-TBA-A11', description: 'OEM Honda Cabin Air Filter — 2017–2022 CR-V', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-coolant',
-    title: 'Engine Coolant Flush & Replacement',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 170,000 km (last done 120,000 km). Use Honda Type 2 (blue) coolant ONLY. Do NOT mix with green, orange, or universal coolant — chemical incompatibility causes corrosion and gel buildup. The 1.5T aluminum engine block is particularly susceptible to coolant-related corrosion. Flush completely — do not just top up.',
-    procedure: [
-      'Allow engine to cool completely — minimum 2 hours after last operation. Never open radiator cap on hot engine.',
-      'Gather: Honda Type 2 coolant (OL999-9011) 2 bottles, distilled water, drain pan, funnel, coolant tester.',
-      'Place drain pan under radiator. Locate radiator drain petcock on bottom of radiator — turn counterclockwise to open.',
-      'Open coolant reservoir cap on top of engine to allow faster draining.',
-      'Allow complete drain — 10+ minutes. Close petcock.',
-      'Fill system with distilled water only. Start engine, run to operating temp (5 minutes), then drain again. This flush removes remaining old coolant.',
-      'Close petcock. Fill system with 50/50 mix of Honda Type 2 coolant and distilled water.',
-      'Capacity: approximately 5.1L total for 2018 CR-V 1.5T.',
-      'Fill radiator to base of neck. Fill reservoir to MAX line.',
-      'Leave reservoir cap off. Start engine and let idle. Watch for air bubbles in reservoir — this is normal as system purges air.',
-      'With heater on MAX, run engine until thermostat opens (temp gauge reaches middle). Top up coolant as level drops from air purging.',
-      'Once temp stabilizes and no more bubbles, install reservoir cap.',
-      'Check for leaks at petcock, hose clamps, and reservoir cap.',
-      'After 1 drive cycle, recheck coolant level when cold — top up if needed.',
-      'Test coolant freeze protection with tester — should read good to at least -40°C for White River conditions.',
-    ],
-    parts: [
-      { partNumber: 'OL999-9011', description: 'Honda Type 2 Blue Coolant 1L', qty: 4, unit: 'bottle' },
-      { partNumber: 'N/A', description: 'Distilled water (use only — not tap water)', qty: 2, unit: 'L' },
-    ],
-  },
-
-  {
-    id: 'wo-caliper',
-    title: 'Brake Caliper Slides & Hardware Service',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 170,000 km. White River salt and road grit seize caliper slides, causing uneven pad wear, brake pull, and heat buildup. This is a quick service — do at every pad inspection. Seized slides are one of the most common brake problems in Northern Ontario.',
-    procedure: [
-      'Lift vehicle and remove wheels. Start with one axle at a time.',
-      'Visually inspect brake pads — measure thickness. Replace if under 3mm.',
-      'Locate caliper slide pins — two per caliper (upper and lower), covered by rubber boots.',
-      'Remove caliper bolts (12mm or 14mm). Hang caliper from spring or wire — do not let it hang by brake hose.',
-      'Slide out caliper slide pins. Inspect rubber boots for cracking — replace if torn.',
-      'Clean slide pin bores with wire brush or clean rag. Remove all old grease and corrosion.',
-      'Inspect slide pins — should be smooth with no pitting. Replace if corroded.',
-      'Apply fresh caliper slide grease (silicone-based, not petroleum) to slide pins. Coat entire pin surface.',
-      'Reinstall slide pins. Verify boots are properly seated.',
-      'Check caliper piston movement — depress piston with C-clamp or caliper tool. Should move smoothly.',
-      'Check brake pad anti-squeal shims — clean contact points and apply brake quiet gel.',
-      'Reinstall caliper. Torque caliper bolts: 27–33 N·m.',
-      'Reinstall wheel. Torque lug nuts: 108 N·m.',
-      'Pump brake pedal several times until firm before moving vehicle.',
-      'Test drive — verify no brake pull or dragging.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'Caliper slide pin grease (silicone-based)', qty: 1, unit: 'tube' },
-      { partNumber: 'N/A', description: 'Brake caliper hardware kit (if slides worn)', qty: 1, unit: 'kit' },
-    ],
-  },
-
-  // ── OK / SCHEDULED ────────────────────────────────────────
-  {
-    id: 'wo-airfilter',
-    title: 'Engine Air Filter Replacement',
-    priority: 'low',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 170,000 km (10,000 km interval — shortened from 30K due to White River gravel roads). A clogged air filter increases fuel consumption, can worsen oil dilution on the 1.5T (restricted airflow = richer mixture), and reduces turbo efficiency. On gravel roads, inspect every service.',
-    procedure: [
-      'Open hood. Air filter box is on driver side, connected to the turbo inlet pipe.',
-      'Loosen the large hose clamp connecting the airbox outlet to the turbo inlet pipe (8mm or 10mm).',
-      'Unclip the 4 plastic clips holding the airbox lid. Two on front, two on back.',
-      'Lift airbox lid. Remove old air filter.',
-      'Inspect airbox interior — remove any debris, insects, leaves, or moisture.',
-      'Hold old filter up to light — if light barely passes through, it was definitely due.',
-      'Install new filter — confirm the rubber seal seats fully around the entire perimeter of the airbox.',
-      'Reinstall airbox lid, engage all 4 clips. Verify all clips are fully snapped.',
-      'Reconnect intake hose, tighten clamp snugly — do not overtighten (plastic inlet can crack).',
-      'Start engine. Listen for any intake noise, hissing, or boost leaks.',
-    ],
-    parts: [
-      { partNumber: '17220-5PA-A00', description: 'OEM Honda Engine Air Filter — 1.5T 2017–2022 CR-V', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-cvt',
-    title: 'CVT Fluid Pan-Drop Service',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 200,000 km (50,000 km interval from last service at 150,000 km). Honda HCF-2 ONLY — using any other fluid will destroy the CVT. The pan-drop method replaces approximately 4.5 qt (partial change). This is not a full flush — a full CVT flush requires specialized equipment. The pan-drop is the correct DIY method.',
-    procedure: [
-      'Gather: Honda HCF-2 fluid (5 qt minimum), new CVT pan filter 25420-5LJ-003, pan gasket 21814-RJ2-003, top filter 25450-P4V-013, drain pan, 3/8" drive ratchet, torque wrench.',
-      'Warm up transmission with 10-minute drive — warm fluid drains more completely.',
-      'Lift vehicle on jack stands. Locate CVT pan under vehicle — aluminum pan with multiple bolts.',
-      'Place large drain pan under CVT pan. Remove all pan bolts (10mm) starting from corners.',
-      'Lower pan carefully — fluid will spill as last bolts are removed. Allow full drain.',
-      'Remove old pan filter — it pulls straight down. Note orientation.',
-      'Inspect pan for metal debris — fine particles are normal. Chunks or flakes indicate internal wear.',
-      'Clean pan interior thoroughly with clean lint-free cloth. Clean mating surface on transmission case.',
-      'Install new top filter 25450-P4V-013 if accessible (requires dropping valve body on some models — skip if not accessible).',
-      'Install new pan filter 25420-5LJ-003 — push straight up until it clicks into place.',
-      'Install new pan gasket 21814-RJ2-003 on pan — do not use RTV sealant.',
-      'Reinstall pan. Torque bolts in crisscross pattern: 12 N·m (do NOT overtighten — aluminum threads strip easily).',
-      'Refill with Honda HCF-2: approximately 4.5 qt (4.3L) through dipstick tube or fill port.',
-      'Start engine, shift through all gear positions (P-R-N-D-L), return to P. Let idle 2 minutes.',
-      'Check fluid level with engine running and transmission at operating temp. Add fluid to reach correct level on dipstick.',
-      'Check for leaks at pan. Test drive — verify smooth CVT operation and no slipping.',
-    ],
-    parts: [
-      { partNumber: '25420-5LJ-003', description: 'CVT Pan Filter', qty: 1, unit: 'each' },
-      { partNumber: '21814-RJ2-003', description: 'CVT Pan Gasket', qty: 1, unit: 'each' },
-      { partNumber: '25450-P4V-013', description: 'CVT Top Filter', qty: 1, unit: 'each' },
-      { partNumber: 'N/A', description: 'Honda HCF-2 CVT Fluid', qty: 5, unit: 'qt' },
-    ],
-  },
-
-  {
-    id: 'wo-sparkplug',
-    title: 'Spark Plugs Replacement & Valve Adjustment',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 200,000 km. NGK Laser Iridium plugs — do NOT re-gap iridium tips, they are factory pre-set at 0.030 in (0.75mm). Re-gapping damages the iridium coating. Valve adjustment requires checking clearance on cold engine — spec: intake 0.18–0.22mm, exhaust 0.23–0.27mm. If clearances are within spec, no adjustment needed.',
-    procedure: [
-      'Allow engine to cool completely — valve adjustment requires cold engine. Minimum 3 hours after last operation.',
-      'Gather: 4x NGK Iridium plugs 12290-59B-A01, spark plug socket (5/8"), torque wrench, feeler gauges (0.18–0.27mm range), valve cover gasket set.',
-      'Remove engine cover (plastic, 4 bolts or clips).',
-      'Disconnect ignition coil connectors — press tab and pull straight back.',
-      'Remove ignition coil bolts (10mm) and pull coils straight up.',
-      'Remove spark plugs with 5/8" spark plug socket. Inspect old plugs — wear pattern indicates engine health.',
-      'Install new plugs hand tight, then torque to 18 N·m (13 ft·lb). Do NOT overtighten — aluminum head threads strip.',
-      'Reinstall coils. Torque coil bolts: 9 N·m. Reconnect connectors.',
-      'VALVE ADJUSTMENT: Remove valve cover bolts in crisscross pattern. Lift valve cover.',
-      'Rotate engine to TDC (Top Dead Center) cylinder 1 — align timing marks.',
-      'Check valve clearances on cylinder 1 with feeler gauges: intake 0.18–0.22mm, exhaust 0.23–0.27mm.',
-      'Rotate engine 180° for each subsequent cylinder in firing order (1-3-4-2).',
-      'If any clearance is out of spec, record the measurement — shim adjustment requires removing camshaft. Note clearances for shop if adjustment needed.',
-      'Install new valve cover gasket. Reinstall valve cover. Torque bolts in crisscross pattern: 10 N·m.',
-      'Reinstall engine cover. Start engine and verify smooth idle.',
-    ],
-    parts: [
-      { partNumber: '12290-59B-A01', description: 'NGK Laser Iridium Spark Plug (set of 4)', qty: 4, unit: 'each' },
-      { partNumber: '12341-59B-003', description: 'Valve Cover Gasket Set', qty: 1, unit: 'set' },
-    ],
-  },
-
-  {
-    id: 'wo-serpentine',
-    title: 'Serpentine Belt Inspection & Replacement',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Inspect now (belt replaced at 130,000 km). Due for replacement at 200,000 km or sooner if inspection shows cracking, glazing, or fraying. The serpentine belt drives the alternator and A/C compressor. Belt failure leaves you stranded.',
-    procedure: [
-      'With engine OFF and cold, locate serpentine belt on front of engine — runs around alternator, A/C compressor, and idler pulleys.',
-      'Inspect belt surface: look for cracks across ribs, glazing (shiny surface), missing chunks, fraying on edges, or squealing sound when running.',
-      'Check belt tension — should have minimal slack. Automatic tensioner maintains tension on 1.5T.',
-      'Inspect tensioner pulley and idler pulleys — spin by hand with belt off, should rotate smoothly with no roughness or noise.',
-      'TO REPLACE: Use 14mm socket or breaker bar on tensioner pulley bolt to relieve tension. Route new belt around all pulleys per belt routing diagram (on sticker near engine or in owner manual).',
-      'Release tensioner. Verify belt is seated in all pulley grooves.',
-      'Start engine and verify belt runs smoothly and quietly.',
-      'Inspect tensioner spring tension — if tensioner cannot maintain proper tension, replace tensioner.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'Gates K060825 or OEM Serpentine Belt', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-radiatorhose',
-    title: 'Radiator Hose Inspection & Replacement',
-    priority: 'low',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 200,000 km (proactive). Northern Ontario winters accelerate rubber degradation — temperature cycling from -40°C to operating temp stresses hoses more than southern climates. Inspect now for cracking or swelling. A burst hose causes immediate overheating and potential engine damage.',
-    procedure: [
-      'Allow engine to cool completely.',
-      'Inspect upper radiator hose: from radiator top to engine. Squeeze firmly — should feel firm and springy, not soft/mushy or hard/brittle.',
-      'Inspect lower radiator hose: from radiator bottom to water pump. Same squeeze test.',
-      'Inspect both hoses for surface cracks, swelling, oil contamination, or chafing from nearby components.',
-      'Inspect hose clamps — should be tight with no corrosion. Replace spring clamps with screw clamps if corroded.',
-      'Check overflow/reservoir hose from radiator to coolant reservoir.',
-      'TO REPLACE UPPER HOSE: Drain coolant first (open petcock). Loosen clamps, twist and pull hose off. Install new hose, position clamps past bead, tighten clamps.',
-      'TO REPLACE LOWER HOSE: Drain coolant completely. May need to raise vehicle for access. Follow same clamp procedure.',
-      'Refill with Honda Type 2 50/50 mix. Bleed air from system by running engine with reservoir cap off until thermostat opens.',
-      'Check for leaks at all clamp connections.',
-    ],
-    parts: [
-      { partNumber: '19501-5AA-A01', description: 'Upper Radiator Hose', qty: 1, unit: 'each' },
-      { partNumber: '19502-5AA-A01', description: 'Lower Radiator Hose', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-chassis',
-    title: 'Brakes & Chassis Inspection',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 170,000 km (20,000 km interval). White River gravel roads, potholes, and salt are hard on suspension and brake components. This full inspection catches problems before they become failures or safety issues. Take photos of worn components for your records.',
-    procedure: [
-      'Lift vehicle on jack stands. Remove all 4 wheels.',
-      'BRAKES — Front: measure pad thickness (min 3mm). Inspect rotor surface for scoring, heat cracks, or rust pitting. Check rotor thickness with micrometer if available.',
-      'BRAKES — Rear: same inspection as front. Check parking brake cable condition.',
-      'CALIPERS: inspect for fluid leaks at piston seals and bleed screws. Check slide pin boots.',
-      'BRAKE LINES: inspect rubber flex hoses for cracking or swelling. Inspect steel hard lines for rust.',
-      'BALL JOINTS: grab tire at 9 and 3 o\'clock, attempt to wiggle — any movement is a concern. Grab at 12 and 6 o\'clock and wiggle for wheel bearing check.',
-      'TIE ROD ENDS: grab steering linkage and attempt to move — no play should be present.',
-      'CV AXLE BOOTS: inspect inner and outer boots on both front axles for cracking or grease sling.',
-      'SWAY BAR: check end links for play, check sway bar bushings for cracking.',
-      'STRUTS/SHOCKS: inspect for oil leakage on strut body. Push down on each corner — should rebound once and stop.',
-      'WHEEL BEARINGS: spin each wheel by hand. Should rotate smoothly and quietly. No roughness.',
-      'EXHAUST: visually inspect exhaust system for rust holes, loose hangers, or contact with body.',
-      'UNDERCARRIAGE: general inspection for rust on frame rails, subframe, and floor pan.',
-      'Reinstall wheels. Torque lug nuts 108 N·m.',
-      'Record all findings with measurements and photos.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'Inspection only — parts as needed based on findings', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-pcv',
-    title: 'PCV Valve Replacement',
-    priority: 'low',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Previously replaced at 140,000 km. Next due at 280,000 km. The PCV (Positive Crankcase Ventilation) valve prevents crankcase pressure buildup and routes blow-by gases back into the intake. A failed PCV valve causes oil consumption, rough idle, and accelerates oil dilution on the 1.5T. CRITICAL: This valve is known to be extremely fragile on the 1.5T — heat soak the engine bay before attempting removal to soften the plastic.',
-    procedure: [
-      'CRITICAL WARNING: The PCV valve on the 2018 CR-V 1.5T is extremely fragile. The plastic breaks easily if forced cold. Heat soak the engine (run to operating temp, then let sit 15 min) before attempting removal.',
-      'Locate PCV valve on driver side of engine — black plastic valve connected to a hose, mounted in valve cover.',
-      'Disconnect the small hose from PCV valve — squeeze clip and pull straight off.',
-      'Gently twist PCV valve counterclockwise — use your fingers only, NO tools unless absolutely necessary.',
-      'If valve will not turn: apply penetrating oil (PB Blaster) around the base and wait 10 minutes. Try again with gentle twisting motion. DO NOT force.',
-      'Once loose, pull PCV valve straight up to remove.',
-      'Inspect the hose connected to PCV valve — replace if cracked or hardened.',
-      'Install new valve — hand press straight down, twist clockwise to lock. Should snap into place.',
-      'Reconnect hose — push firmly until clip snaps.',
-      'Start engine. Listen for hissing near valve cover — indicates improper seal.',
-      'Check for oil leaks around PCV valve base.',
-    ],
-    parts: [
-      { partNumber: '17130-5A2-A01', description: 'OEM PCV Valve — 2018 CR-V 1.5T (FRAGILE — handle carefully)', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-battery',
-    title: 'Battery Load Test & Replacement',
-    priority: 'high',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Battery replaced at 130,000 km per your records — approximately 2–3 years ago depending on when it was replaced. Load test every fall before White River winter. A battery that passes a voltage test can still fail a load test. At -30°C to -40°C, a weak battery will not start the engine. Optima RedTop or OEM Honda replacement recommended.',
-    procedure: [
-      'Load test battery with a battery load tester (available at Canadian Tire or auto parts stores for ~$50, or free testing at most auto parts counters).',
-      'Test should be done with battery at room temperature minimum — a cold battery will test weak even if healthy.',
-      'Connect load tester per instructions. A healthy battery should hold above 9.6V under load for 15 seconds.',
-      'Check battery date code — typically a sticker or stamp on top. Format varies by brand.',
-      'Check battery terminals for corrosion (white/blue powdery buildup) — clean with baking soda solution and wire brush if present.',
-      'Check battery hold-down clamp — must be secure. A loose battery vibrates and fails early.',
-      'TO REPLACE: Disconnect negative (black) cable first, then positive (red).',
-      'Remove hold-down clamp bolt.',
-      'Lift out old battery — heavy, use proper lifting technique.',
-      'Clean battery tray of any corrosion.',
-      'Install new battery. Reconnect positive first, then negative.',
-      'Reinstall hold-down clamp — battery must be secured.',
-      'Apply terminal protector spray or petroleum jelly to terminals to prevent corrosion.',
-      'Start vehicle and verify normal operation. Some systems (radio, power windows) may need to be reset.',
-      'NOTE: After battery replacement, the idle may be rough for 10–15 minutes while the ECU relearns. This is normal.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'Optima 35-RedTop or Honda OEM Battery', qty: 1, unit: 'each' },
-      { partNumber: 'N/A', description: 'Terminal protector spray', qty: 1, unit: 'each' },
-    ],
-  },
-
-  {
-    id: 'wo-fuel',
-    title: 'Fuel System Cleaner Treatment',
-    priority: 'low',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Due at 165,000 km (10,000 km interval). GDI direct injectors accumulate deposits that reduce spray pattern quality, causing rough idle, misfires, and increased fuel consumption. Use BG 44K or Chevron Techron — add to fuel tank. Always use top-tier fuel (Petro-Canada, Shell V-Power) in White River — these contain higher concentrations of detergent additives.',
-    procedure: [
-      'Purchase BG 44K or Chevron Techron Complete Fuel System Cleaner.',
-      'Add entire contents of one bottle to nearly empty fuel tank.',
-      'Fill tank with premium top-tier fuel (Petro-Canada 91 or Shell V-Power).',
-      'Drive normally — cleaner works through the fuel system over the next tank.',
-      'For best results, drive a mix of highway and city over the next 500 km to work the cleaner through the full temperature range.',
-      'NOTE: Do not use cheap no-name fuel additives — they can damage injector seals. BG 44K and Techron are the two proven options.',
-      'Long-term: always use top-tier fuel at stations like Petro-Canada or Shell. Avoid no-name stations for regular use on this engine.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'BG 44K or Chevron Techron Fuel System Cleaner', qty: 1, unit: 'bottle' },
-    ],
-  },
-
-  {
-    id: 'wo-undercoat',
-    title: 'Undercoating — Annual Rust Protection',
-    priority: 'medium',
-    status: 'open',
-    createdKm: 150000,
-    createdAt: new Date().toISOString(),
-    notes: 'Annual service — call Alisats Rust Proofing every May. White River road salt is one of the biggest threats to reaching 500,000 km. Frame rust, subframe corrosion, and brake line deterioration are all salt-related failures. Annual undercoating is one of the best investments for Northern Ontario vehicles.',
-    procedure: [
-      'Call Alisats Rust Proofing in May to schedule appointment.',
-      'Before appointment: wash undercarriage thoroughly at coin wash to remove salt and dirt buildup from winter.',
-      'Inform shop of any areas that need extra attention — wheel wells, subframe, brake line routing.',
-      'After treatment: avoid washing undercarriage for at least 1 week to allow coating to fully cure.',
-      'After the curing period, inspect treated areas to verify full coverage.',
-      'Visually inspect brake lines, fuel lines, and frame rails while vehicle is on the hoist during undercoating appointment.',
-      'Request spray inside door sills and rocker panels if shop offers this service.',
-    ],
-    parts: [
-      { partNumber: 'N/A', description: 'Alisats Rust Proofing — $300 CAD', qty: 1, unit: 'service' },
-    ],
-  },
-
+const DEFAULT_INTERVALS = [
+  { id: 'oil',       name: 'Engine Oil & Filter',           intervalKm: 5000,   lastDoneKm: 156000 },
+  { id: 'cvt',       name: 'CVT Fluid Pan-Drop',            intervalKm: 100000, lastDoneKm: 150000 },
+  { id: 'cvtfluid',  name: 'CVT Fluid Change',              intervalKm: 30000,  lastDoneKm: 150000 },
+  { id: 'diff',      name: 'Rear Differential Fluid',       intervalKm: 50000,  lastDoneKm: 120000 },
+  { id: 'brakes',    name: 'Brakes & Chassis Inspection',   intervalKm: 20000,  lastDoneKm: 150000 },
+  { id: 'coolant',   name: 'Engine Coolant',                intervalKm: 50000,  lastDoneKm: 120000 },
+  { id: 'brakefld',  name: 'Brake Fluid',                   intervalKm: 50000,  lastDoneKm: 130000 },
+  { id: 'belt',      name: 'Serpentine Belt',               intervalKm: 50000,  lastDoneKm: 150000 },
+  { id: 'sparkplug', name: 'Spark Plugs & Valve Adjust',    intervalKm: 100000, lastDoneKm: 100000 },
+  { id: 'pcv',       name: 'PCV Valve',                     intervalKm: 50000,  lastDoneKm: 150000 },
+  { id: 'airfilter', name: 'Engine Air Filter',             intervalKm: 10000,  lastDoneKm: 150000 },
+  { id: 'cabinair',  name: 'Cabin Air Filter',              intervalKm: 20000,  lastDoneKm: 150000 },
+  { id: 'tires',     name: 'Tire Rotation',                 intervalKm: 10000,  lastDoneKm: 150000 },
+  { id: 'alignment', name: 'Wheel Alignment',               intervalKm: 40000,  lastDoneKm: 150000 },
+  { id: 'fuel',      name: 'Fuel System Cleaner',           intervalKm: 10000,  lastDoneKm: 155000 },
+  { id: 'radiator',  name: 'Radiator Hoses',                intervalKm: 100000, lastDoneKm: 150000 },
+  { id: 'caliper',   name: 'Caliper Slides & Hardware',     intervalKm: 40000,  lastDoneKm: 130000 },
 ]
+
+const DEFAULT_STATE = {
+  currentKm: 150000, weeklyLog: [], workOrders: PRESET_WORK_ORDERS,
+  maintenanceLog: [], lastUpdated: new Date().toISOString()
+}
+
+function getStatus(item, km) {
+  const rem = (item.lastDoneKm + item.intervalKm) - km
+  if (rem <= 0) return 'overdue'
+  if (rem <= 2000) return 'due_soon'
+  return 'ok'
+}
+function fmtKm(km) { return Number(km).toLocaleString('en-CA') + ' km' }
+function fmtDate(iso) { return new Date(iso).toLocaleDateString('en-CA') }
+
+const SC = {
+  overdue:  { bg: '#2d1515', border: '#c53030', badge: '#e53e3e', text: '#fc8181' },
+  due_soon: { bg: '#2d2315', border: '#c05621', badge: '#dd6b20', text: '#f6ad55' },
+  ok:       { bg: '#142d1a', border: '#276749', badge: '#38a169', text: '#68d391' },
+}
+
+const TABS = ['Dashboard', 'Work Orders', 'Mileage Log', 'Service History', 'AI Assistant']
+
+function PhotoCapture({ photos, onAdd, onRemove }) {
+  const fileRef = useRef(null)
+  const camRef = useRef(null)
+  function handleFiles(files) {
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onload = e => onAdd({ id: Date.now() + Math.random(), url: e.target.result, name: file.name, ts: new Date().toISOString() })
+      reader.readAsDataURL(file)
+    })
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+        {photos.map(p => (
+          <div key={p.id} style={{ position: 'relative', width: '72px', height: '72px' }}>
+            <img src={p.url} alt="" style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #2d3748' }} />
+            <button onClick={() => onRemove(p.id)} style={{ position: 'absolute', top: '-5px', right: '-5px', width: '16px', height: '16px', borderRadius: '50%', background: '#c53030', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>×</button>
+          </div>
+        ))}
+      </div>
+      <input ref={camRef} type="file" accept="image/*" capture="environment" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
+      <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button onClick={() => camRef.current.click()} style={{ background: '#1a2744', border: '1px solid #2b6cb0', borderRadius: '6px', padding: '7px 12px', color: '#90cdf4', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>📷 Camera</button>
+        <button onClick={() => fileRef.current.click()} style={{ background: '#1a1f2e', border: '1px solid #2d3748', borderRadius: '6px', padding: '7px 12px', color: '#718096', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }}>🖼 Gallery</button>
+        {photos.length > 0 && <span style={{ fontSize: '10px', color: '#4a5568', alignSelf: 'center' }}>{photos.length} photo{photos.length > 1 ? 's' : ''}</span>}
+      </div>
+    </div>
+  )
+}
+
+// ── Service History Modal ──
+function HistoryModal({ title, serviceId, log, onClose }) {
+  const records = log.filter(l => l.serviceId === serviceId || l.title === title)
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ background: '#13151f', border: '1px solid #2d3748', borderRadius: '12px 12px 0 0', width: '100%', maxWidth: '860px', maxHeight: '80vh', overflow: 'auto', padding: '20px' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0' }}>{title}</div>
+            <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '2px' }}>Service history — {records.length} record{records.length !== 1 ? 's' : ''}</div>
+          </div>
+          <button onClick={onClose} style={{ background: '#2d3748', border: 'none', borderRadius: '50%', width: '28px', height: '28px', color: '#e2e8f0', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        </div>
+
+        {records.length === 0 && (
+          <div style={{ color: '#4a5568', textAlign: 'center', padding: '32px 0', fontSize: '12px' }}>No history yet for this service.</div>
+        )}
+
+        {records.map((r, i) => (
+          <div key={i} style={{ background: '#0f1117', border: '1px solid #1e2330', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+              <div style={{ fontWeight: '700', fontSize: '13px', color: '#68d391' }}>{fmtKm(r.doneKm)}</div>
+              <div style={{ fontSize: '11px', color: '#4a5568' }}>{fmtDate(r.date)}</div>
+            </div>
+            {r.beforeComment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '3px' }}><span style={{ color: '#4a5568' }}>Before: </span>{r.beforeComment}</div>}
+            {r.generalComment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '3px' }}><span style={{ color: '#4a5568' }}>During: </span>{r.generalComment}</div>}
+            {r.afterComment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '3px' }}><span style={{ color: '#4a5568' }}>After: </span>{r.afterComment}</div>}
+            {r.comment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '3px' }}>{r.comment}</div>}
+            {r.notes && !r.beforeComment && !r.afterComment && <div style={{ fontSize: '11px', color: '#718096', marginBottom: '3px' }}>{r.notes?.slice(0, 100)}{r.notes?.length > 100 ? '…' : ''}</div>}
+            {(r.totalPhotos > 0 || r.photos?.length > 0) && (
+              <div style={{ marginTop: '8px' }}>
+                <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '5px' }}>
+                  📸 {r.beforePhotos?.length || 0} before · {r.generalPhotos?.length || 0} during · {r.afterPhotos?.length || 0} after {r.photos?.length > 0 ? `· ${r.photos.length} photos` : ''}
+                </div>
+                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                  {[...(r.beforePhotos || []), ...(r.generalPhotos || []), ...(r.afterPhotos || []), ...(r.photos || [])].map((p, pi) => (
+                    <img key={pi} src={p.url} alt="" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '5px', border: '1px solid #2d3748' }} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default function App() {
+  const [state, setState] = useState(() => {
+    try { const ls = localStorage.getItem('crv_cmms'); if (ls) { const p = JSON.parse(ls); if (p.state) return p.state } } catch {}
+    return DEFAULT_STATE
+  })
+  const [intervals, setIntervals] = useState(() => {
+    try { const ls = localStorage.getItem('crv_cmms'); if (ls) { const p = JSON.parse(ls); if (p.intervals) return p.intervals } } catch {}
+    return DEFAULT_INTERVALS
+  })
+
+  const [tab, setTab] = useState('Dashboard')
+  const [kmInput, setKmInput] = useState('')
+
+  // History modal
+  const [historyModal, setHistoryModal] = useState(null) // { id, title }
+
+  // Scheduled item done panel
+  const [completingId, setCompletingId] = useState(null)
+  const [completeKm, setCompleteKm] = useState('')
+  const [completeComment, setCompleteComment] = useState('')
+  const [completePhotos, setCompletePhotos] = useState([])
+
+  // Work order states
+  const [woView, setWoView] = useState('list')
+  const [selectedWO, setSelectedWO] = useState(null)
+  const [woTab, setWoTab] = useState('overview')
+  const [closingWO, setClosingWO] = useState(null)
+  const [closePhotos, setClosePhotos] = useState([])
+  const [closeComment, setCloseComment] = useState('')
+  const [closeKm, setCloseKm] = useState('')
+  const [beforePhotos, setBeforePhotos] = useState([])
+  const [afterPhotos, setAfterPhotos] = useState([])
+  const [generalPhotos, setGeneralPhotos] = useState([])
+  const [beforeComment, setBeforeComment] = useState('')
+  const [afterComment, setAfterComment] = useState('')
+  const [generalComment, setGeneralComment] = useState('')
+  const [detailCloseKm, setDetailCloseKm] = useState('')
+
+  // AI
+  const [chat, setChat] = useState([{ role: 'assistant', content: "Hi Erick! I'm your CR-V assistant. Ask me anything about your vehicle — what's overdue, what to watch for, procedures, part numbers, anything." }])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef(null)
+  const [syncStatus, setSyncStatus] = useState('idle')
+  const [driveEnabled, setDriveEnabled] = useState(false)
+  const saveTimer = useRef(null)
+
+  useEffect(() => {
+    async function init() {
+      setSyncStatus('syncing')
+      const d = await loadFromDrive()
+      if (d) { if (d.state) setState(d.state); if (d.intervals) setIntervals(d.intervals); setDriveEnabled(true); setSyncStatus('saved') }
+      else setSyncStatus('idle')
+    }
+    init()
+  }, [])
+
+  useEffect(() => {
+    const payload = { vehicle: VEHICLE, state, intervals }
+    try { localStorage.setItem('crv_cmms', JSON.stringify(payload)) } catch {}
+    if (driveEnabled) {
+      clearTimeout(saveTimer.current); setSyncStatus('syncing')
+      saveTimer.current = setTimeout(async () => { const ok = await saveToDrive(payload); setSyncStatus(ok ? 'saved' : 'error') }, 2000)
+    }
+    return () => clearTimeout(saveTimer.current)
+  }, [state, intervals, driveEnabled])
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat])
+
+  const km = state.currentKm
+  const sorted = [...intervals].map(i => ({ ...i, nextDue: i.lastDoneKm + i.intervalKm, remaining: (i.lastDoneKm + i.intervalKm) - km, status: getStatus(i, km) })).sort((a, b) => a.remaining - b.remaining)
+  const openWOs = state.workOrders.filter(w => w.status !== 'completed')
+  const completedWOs = state.workOrders.filter(w => w.status === 'completed')
+  const overdueCount = sorted.filter(i => i.status === 'overdue').length
+  const dueSoonCount = sorted.filter(i => i.status === 'due_soon').length
+  const pct = ((km / VEHICLE.targetKm) * 100).toFixed(1)
+  const pcBadge = p => p === 'high' ? '#c53030' : p === 'medium' ? '#c05621' : '#276749'
+
+  function logKm() {
+    const v = parseInt(kmInput.replace(/,/g, ''), 10)
+    if (!v || v <= km || v > 999999) return
+    setState(s => ({ ...s, currentKm: v, weeklyLog: [{ km: v, prev: s.currentKm, date: new Date().toISOString() }, ...s.weeklyLog].slice(0, 52), lastUpdated: new Date().toISOString() }))
+    setKmInput('')
+  }
+
+  // ── Scheduled item: start done panel ──
+  function startDone(item) {
+    setCompletingId(item.id)
+    setCompleteKm(String(km))
+    setCompleteComment('')
+    setCompletePhotos([])
+  }
+
+  function confirmDone(item) {
+    const doneKm = parseInt(completeKm.replace(/,/g, ''), 10) || km
+    setIntervals(prev => prev.map(i => i.id === item.id ? { ...i, lastDoneKm: doneKm } : i))
+    const record = {
+      id: Date.now(),
+      serviceId: item.id,
+      title: item.name,
+      type: 'scheduled',
+      doneKm,
+      date: new Date().toISOString(),
+      comment: completeComment,
+      photos: completePhotos,
+      totalPhotos: completePhotos.length,
+    }
+    setState(s => ({ ...s, maintenanceLog: [record, ...s.maintenanceLog] }))
+    setCompletingId(null); setCompleteKm(''); setCompleteComment(''); setCompletePhotos([])
+  }
+
+  // ── WO quick close ──
+  function startQuickClose(wo, e) {
+    e.stopPropagation()
+    setClosingWO(wo.id); setClosePhotos([]); setCloseComment(''); setCloseKm(String(km))
+  }
+  function cancelQuickClose(e) { e.stopPropagation(); setClosingWO(null); setClosePhotos([]); setCloseComment('') }
+  function confirmQuickClose(wo, e) {
+    e.stopPropagation()
+    const doneKm = parseInt(closeKm.replace(/,/g, ''), 10) || km
+    const record = {
+      id: Date.now(), serviceId: wo.id, title: wo.title, type: 'work-order',
+      doneKm, date: new Date().toISOString(), notes: wo.notes, parts: wo.parts,
+      afterComment: closeComment, afterPhotos: closePhotos, totalPhotos: closePhotos.length,
+    }
+    setState(s => ({
+      ...s,
+      workOrders: s.workOrders.map(w => w.id === wo.id ? { ...w, status: 'completed', completedKm: doneKm, completedAt: new Date().toISOString(), record } : w),
+      maintenanceLog: [record, ...s.maintenanceLog],
+    }))
+    setClosingWO(null); setClosePhotos([]); setCloseComment('')
+  }
+
+  // ── WO detail open ──
+  function openWODetail(wo) {
+    setSelectedWO(wo); setWoView('detail'); setWoTab('overview')
+    setBeforePhotos(wo.draft?.beforePhotos || [])
+    setAfterPhotos(wo.draft?.afterPhotos || [])
+    setGeneralPhotos(wo.draft?.generalPhotos || [])
+    setBeforeComment(wo.draft?.beforeComment || '')
+    setAfterComment(wo.draft?.afterComment || '')
+    setGeneralComment(wo.draft?.generalComment || '')
+    setDetailCloseKm(String(km))
+  }
+
+  function saveDraft() {
+    if (!selectedWO) return
+    setState(s => ({ ...s, workOrders: s.workOrders.map(w => w.id === selectedWO.id ? { ...w, draft: { beforePhotos, afterPhotos, generalPhotos, beforeComment, afterComment, generalComment } } : w) }))
+  }
+
+  function closeWODetail() {
+    saveDraft()
+    const doneKm = parseInt(detailCloseKm.replace(/,/g, ''), 10) || km
+    const record = {
+      id: Date.now(), serviceId: selectedWO.id, title: selectedWO.title, type: 'work-order',
+      doneKm, date: new Date().toISOString(), notes: selectedWO.notes, parts: selectedWO.parts,
+      beforeComment, generalComment, afterComment,
+      beforePhotos, generalPhotos, afterPhotos,
+      totalPhotos: beforePhotos.length + generalPhotos.length + afterPhotos.length,
+    }
+    setState(s => ({
+      ...s,
+      workOrders: s.workOrders.map(w => w.id === selectedWO.id ? { ...w, status: 'completed', completedKm: doneKm, completedAt: new Date().toISOString(), draft: null, record } : w),
+      maintenanceLog: [record, ...s.maintenanceLog],
+    }))
+    setWoView('list'); setSelectedWO(null)
+  }
+
+  async function sendChat() {
+    if (!chatInput.trim() || chatLoading) return
+    const msg = chatInput.trim(); setChatInput('')
+    const updated = [...chat, { role: 'user', content: msg }]
+    setChat(updated); setChatLoading(true)
+    const ctx = `You are the AI assistant for Erick's CR-V CMMS. Industrial electrician, White River Ontario, goal 500K km on 2018 Honda CR-V AWD 1.5T. Current: ${fmtKm(km)} (${pct}% to goal).
+INTERVALS: ${sorted.map(i => `${i.name}: last@${fmtKm(i.lastDoneKm)}, next@${fmtKm(i.nextDue)} [${i.remaining <= 0 ? 'OVERDUE' : 'in ' + fmtKm(i.remaining)}]`).join(' | ')}
+OPEN WOs: ${openWOs.map(w => `[${w.priority}] ${w.title}`).join('; ') || 'None'}
+KEY: 1.5T oil dilution risk in cold. CVT filter 25420-5LJ-003. PCV 17130-5A2-A01 fragile. Brake fluid overdue since 130K. Using Liquimoly 0W-20.`
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: ctx, messages: updated.map(m => ({ role: m.role, content: m.content })) }) })
+      const data = await res.json()
+      setChat(prev => [...prev, { role: 'assistant', content: data.content?.map(b => b.text || '').join('') || 'No response.' }])
+    } catch { setChat(prev => [...prev, { role: 'assistant', content: 'Connection error.' }]) }
+    setChatLoading(false)
+  }
+
+  const s = {
+    app: { minHeight: '100vh', background: '#0f1117' },
+    header: { background: '#13151f', borderBottom: '1px solid #1e2330', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '52px', position: 'sticky', top: 0, zIndex: 100 },
+    logoText: { fontSize: '13px', fontWeight: '700', color: '#f7fafc', letterSpacing: '0.06em' },
+    logoSub: { fontSize: '10px', color: '#4a5568', marginLeft: '6px', fontWeight: '400' },
+    syncDot: { width: '6px', height: '6px', borderRadius: '50%', background: syncStatus === 'saved' ? '#38a169' : syncStatus === 'syncing' ? '#d69e2e' : syncStatus === 'error' ? '#e53e3e' : '#4a5568' },
+    kmBadge: { background: '#1a1f2e', border: '1px solid #2d3748', borderRadius: '5px', padding: '3px 10px', fontSize: '11px', color: '#90cdf4', fontWeight: '700' },
+    tabs: { background: '#13151f', borderBottom: '1px solid #1e2330', padding: '0 16px', display: 'flex', gap: '2px', overflowX: 'auto' },
+    tab: a => ({ padding: '10px 14px', fontSize: '11px', fontWeight: a ? '700' : '400', color: a ? '#90cdf4' : '#718096', borderBottom: a ? '2px solid #90cdf4' : '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap' }),
+    body: { padding: '16px', maxWidth: '860px', margin: '0 auto' },
+    grid3: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '16px' },
+    card: { background: '#13151f', border: '1px solid #1e2330', borderRadius: '8px', padding: '14px' },
+    cardTitle: { fontSize: '10px', fontWeight: '700', color: '#4a5568', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '8px' },
+    statNum: c => ({ fontSize: '26px', fontWeight: '700', color: c || '#f7fafc', lineHeight: 1 }),
+    statSub: { fontSize: '10px', color: '#718096', marginTop: '3px' },
+    secTitle: { fontSize: '10px', fontWeight: '700', color: '#4a5568', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px', paddingBottom: '6px', borderBottom: '1px solid #1e2330' },
+    badge: c => ({ fontSize: '9px', fontWeight: '700', padding: '2px 7px', borderRadius: '3px', background: c, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }),
+    btn: { background: '#2b6cb0', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 14px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' },
+    btnSm: (color) => ({ background: '#1a1f2e', color: color || '#90cdf4', border: `1px solid ${color ? color + '44' : '#2d3748'}`, borderRadius: '4px', padding: '4px 9px', fontSize: '10px', cursor: 'pointer', fontWeight: '700', flexShrink: 0, whiteSpace: 'nowrap' }),
+    btnGreen: { background: '#276749', color: '#68d391', border: 'none', borderRadius: '6px', padding: '10px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
+    btnGhost: { background: 'transparent', color: '#718096', border: '1px solid #2d3748', borderRadius: '6px', padding: '8px 14px', fontSize: '12px', cursor: 'pointer' },
+    btnSave: { background: '#1a365d', color: '#90cdf4', border: '1px solid #2b6cb0', borderRadius: '6px', padding: '8px 14px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' },
+    input: { background: '#1a1f2e', border: '1px solid #2d3748', borderRadius: '6px', padding: '8px 11px', color: '#e2e8f0', fontSize: '13px', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' },
+    textarea: { background: '#1a1f2e', border: '1px solid #2d3748', borderRadius: '6px', padding: '8px 11px', color: '#e2e8f0', fontSize: '12px', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box', resize: 'vertical', lineHeight: '1.6' },
+    label: { fontSize: '10px', color: '#718096', marginBottom: '4px', display: 'block', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase' },
+    progressWrap: { height: '4px', background: '#1e2330', borderRadius: '2px', overflow: 'hidden', marginTop: '8px' },
+    progressFill: (p, c) => ({ height: '100%', width: `${Math.min(p, 100)}%`, background: c || '#90cdf4', borderRadius: '2px' }),
+    woInnerTab: a => ({ padding: '7px 12px', fontSize: '11px', fontWeight: a ? '700' : '400', color: a ? '#e2e8f0' : '#718096', background: a ? '#1a2744' : 'transparent', border: a ? '1px solid #2b6cb0' : '1px solid transparent', borderRadius: '5px', cursor: 'pointer', whiteSpace: 'nowrap' }),
+  }
+
+  return (
+    <div style={s.app}>
+      {/* History modal */}
+      {historyModal && (
+        <HistoryModal
+          title={historyModal.title}
+          serviceId={historyModal.id}
+          log={state.maintenanceLog}
+          onClose={() => setHistoryModal(null)}
+        />
+      )}
+
+      <div style={s.header}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={s.syncDot} />
+          <span style={s.logoText}>CR-V CMMS <span style={s.logoSub}>2018 AWD 1.5T</span></span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {overdueCount > 0 && <span style={s.badge('#c53030')}>{overdueCount} overdue</span>}
+          {dueSoonCount > 0 && <span style={s.badge('#c05621')}>{dueSoonCount} soon</span>}
+          <span style={s.kmBadge}>{km.toLocaleString()} km</span>
+        </div>
+      </div>
+
+      <div style={s.tabs}>
+        {TABS.map(t => <div key={t} style={s.tab(tab === t)} onClick={() => { setTab(t); if (t === 'Work Orders') { setWoView('list'); setSelectedWO(null) } }}>{t}</div>)}
+      </div>
+
+      <div style={s.body}>
+
+        {/* ── DASHBOARD ── */}
+        {tab === 'Dashboard' && <>
+          <div style={s.grid3}>
+            <div style={s.card}>
+              <div style={s.cardTitle}>Odometer</div>
+              <div style={s.statNum('#90cdf4')}>{km.toLocaleString()}</div>
+              <div style={s.statSub}>km — {pct}% to 500K</div>
+              <div style={s.progressWrap}><div style={s.progressFill(pct, '#90cdf4')} /></div>
+            </div>
+            <div style={s.card}>
+              <div style={s.cardTitle}>Needs attention</div>
+              <div style={s.statNum(overdueCount > 0 ? '#fc8181' : '#68d391')}>{overdueCount + dueSoonCount}</div>
+              <div style={s.statSub}>{overdueCount} overdue · {dueSoonCount} due soon</div>
+            </div>
+            <div style={s.card}>
+              <div style={s.cardTitle}>Open work orders</div>
+              <div style={s.statNum('#f6e05e')}>{openWOs.length}</div>
+              <div style={s.statSub}>tap to open</div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <div style={s.secTitle}>Weekly mileage check-in</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ flex: 1 }}><label style={s.label}>New odometer reading</label><input style={s.input} placeholder="e.g. 152,500" value={kmInput} onChange={e => setKmInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && logKm()} /></div>
+              <button style={{ ...s.btn, marginTop: '20px', height: '36px' }} onClick={logKm}>Log</button>
+            </div>
+            {state.weeklyLog[0] && <div style={{ marginTop: '6px', fontSize: '10px', color: '#4a5568' }}>Last: {fmtKm(state.weeklyLog[0].km)} on {fmtDate(state.weeklyLog[0].date)} (+{(state.weeklyLog[0].km - state.weeklyLog[0].prev).toLocaleString()} km)</div>}
+          </div>
+
+          <div>
+            <div style={s.secTitle}>Maintenance status</div>
+            {sorted.map(item => {
+              const c = SC[item.status]
+              const isCompleting = completingId === item.id
+              const historyCount = state.maintenanceLog.filter(l => l.serviceId === item.id || l.title === item.name).length
+              return (
+                <div key={item.id} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: '6px', padding: '10px 12px', marginBottom: '5px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontWeight: '600', color: '#e2e8f0', fontSize: '12px' }}>{item.name}</span>
+                      <span style={{ marginLeft: '8px', fontSize: '10px', color: '#718096' }}>
+                        next @ {fmtKm(item.nextDue)} · {item.remaining <= 0
+                          ? <span style={{ color: c.text }}>overdue {fmtKm(Math.abs(item.remaining))}</span>
+                          : `${fmtKm(item.remaining)} left`}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span style={s.badge(c.badge)}>{item.status.replace('_', ' ')}</span>
+                      <button style={s.btnSm('#68d391')} onClick={() => isCompleting ? setCompletingId(null) : startDone(item)}>
+                        {isCompleting ? 'cancel' : '✓ done'}
+                      </button>
+                      <button style={s.btnSm()} onClick={() => setHistoryModal({ id: item.id, title: item.name })}>
+                        {historyCount > 0 ? `📋 ${historyCount}` : '📋'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {isCompleting && (
+                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={s.label}>Completed at (km)</label>
+                          <input style={s.input} value={completeKm} onChange={e => setCompleteKm(e.target.value)} />
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={s.label}>Comments / notes</label>
+                        <textarea style={{ ...s.textarea, height: '60px' }} placeholder="Parts used, findings, torque values, observations..." value={completeComment} onChange={e => setCompleteComment(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={s.label}>Photos</label>
+                        <PhotoCapture photos={completePhotos} onAdd={p => setCompletePhotos(prev => [...prev, p])} onRemove={id => setCompletePhotos(prev => prev.filter(p => p.id !== id))} />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button style={{ ...s.btnGreen, flex: 2 }} onClick={() => confirmDone(item)}>✓ Save & Close</button>
+                        <button style={{ ...s.btnGhost, flex: 1 }} onClick={() => setCompletingId(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </>}
+
+        {/* ── WORK ORDERS ── */}
+        {tab === 'Work Orders' && <>
+          {woView === 'list' && <>
+            <div style={{ marginBottom: '14px' }}><div style={s.secTitle}>Open work orders — {openWOs.length}</div></div>
+            {openWOs.length === 0 && <div style={{ color: '#4a5568', textAlign: 'center', padding: '32px 0', fontSize: '12px' }}>All work orders completed. 🎉</div>}
+
+            {openWOs.map(wo => {
+              const isClosing = closingWO === wo.id
+              return (
+                <div key={wo.id} style={{ ...s.card, marginBottom: '8px', border: `1px solid ${pcBadge(wo.priority)}44` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', cursor: 'pointer' }} onClick={() => !isClosing && openWODetail(wo)}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: '700', fontSize: '13px', color: '#e2e8f0', marginBottom: '3px' }}>{wo.title}</div>
+                      <div style={{ fontSize: '11px', color: '#718096', lineHeight: '1.4' }}>{wo.notes?.slice(0, 80)}{wo.notes?.length > 80 ? '…' : ''}</div>
+                      <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '5px' }}>{wo.procedure?.length || 0} steps · {wo.parts?.length || 0} parts</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, marginLeft: '10px' }}>
+                      <span style={s.badge(pcBadge(wo.priority))}>{wo.priority}</span>
+                      {!isClosing && <span style={{ fontSize: '16px', color: '#4a5568' }}>›</span>}
+                    </div>
+                  </div>
+
+                  {!isClosing && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #1e2330' }}>
+                      <button style={{ ...s.btnGreen, flex: 1, fontSize: '11px', padding: '8px' }} onClick={e => startQuickClose(wo, e)}>✓ Mark Done</button>
+                      <button style={{ ...s.btnSm(), flex: 1, padding: '8px', textAlign: 'center' }} onClick={e => { e.stopPropagation(); openWODetail(wo) }}>View Procedure</button>
+                      <button style={{ ...s.btnSm(), padding: '8px 10px' }} onClick={e => { e.stopPropagation(); setHistoryModal({ id: wo.id, title: wo.title }) }}>📋</button>
+                    </div>
+                  )}
+
+                  {isClosing && (
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #2d3748' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={s.label}>Odometer at completion (km)</label>
+                        <input style={{ ...s.input, width: '140px' }} value={closeKm} onChange={e => setCloseKm(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={s.label}>Comments / notes</label>
+                        <textarea style={{ ...s.textarea, height: '64px' }} placeholder="What was done, findings, parts used, torque values..." value={closeComment} onChange={e => setCloseComment(e.target.value)} />
+                      </div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={s.label}>Photos</label>
+                        <PhotoCapture photos={closePhotos} onAdd={p => setClosePhotos(prev => [...prev, p])} onRemove={id => setClosePhotos(prev => prev.filter(p => p.id !== id))} />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button style={{ ...s.btnGreen, flex: 2 }} onClick={e => confirmQuickClose(wo, e)}>✓ Close Work Order</button>
+                        <button style={{ ...s.btnGhost, flex: 1 }} onClick={cancelQuickClose}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {completedWOs.length > 0 && <>
+              <div style={{ ...s.secTitle, marginTop: '24px' }}>Completed — {completedWOs.length}</div>
+              {completedWOs.map(wo => (
+                <div key={wo.id} style={{ ...s.card, marginBottom: '6px', opacity: 0.6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '12px', color: '#68d391' }}>{wo.title}</div>
+                      <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '2px' }}>@ {fmtKm(wo.completedKm)} · {fmtDate(wo.completedAt)}{wo.record?.totalPhotos > 0 ? ` · ${wo.record.totalPhotos} photos` : ''}</div>
+                      {wo.record?.afterComment && <div style={{ fontSize: '10px', color: '#718096', marginTop: '2px' }}>{wo.record.afterComment.slice(0, 60)}{wo.record.afterComment.length > 60 ? '…' : ''}</div>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span style={s.badge('#276749')}>done</span>
+                      <button style={s.btnSm()} onClick={() => setHistoryModal({ id: wo.id, title: wo.title })}>📋</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>}
+          </>}
+
+          {woView === 'detail' && selectedWO && <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              <button style={s.btnGhost} onClick={() => { saveDraft(); setWoView('list'); setSelectedWO(null) }}>← Back</button>
+              <span style={s.badge(pcBadge(selectedWO.priority))}>{selectedWO.priority}</span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', flex: 1 }}>{selectedWO.title}</span>
+              <button style={s.btnSave} onClick={saveDraft}>Save draft</button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', overflowX: 'auto', paddingBottom: '2px' }}>
+              {['overview', 'procedure', 'photos', 'close'].map(t => (
+                <div key={t} style={s.woInnerTab(woTab === t)} onClick={() => setWoTab(t)}>
+                  {t === 'overview' ? 'Overview' : t === 'procedure' ? `Procedure (${selectedWO.procedure?.length})` : t === 'photos' ? `Photos (${beforePhotos.length + generalPhotos.length + afterPhotos.length})` : 'Close WO'}
+                </div>
+              ))}
+            </div>
+
+            {woTab === 'overview' && <>
+              <div style={{ ...s.card, marginBottom: '10px', borderLeft: `3px solid ${pcBadge(selectedWO.priority)}` }}>
+                <div style={s.cardTitle}>Notes</div>
+                <div style={{ fontSize: '12px', color: '#a0aec0', lineHeight: '1.7' }}>{selectedWO.notes}</div>
+              </div>
+              <div style={s.card}>
+                <div style={s.cardTitle}>Parts & Materials</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                  <thead><tr style={{ borderBottom: '1px solid #2d3748' }}>
+                    {['PART #', 'DESCRIPTION', 'QTY', 'UNIT'].map((h, i) => <th key={i} style={{ textAlign: i === 2 ? 'center' : 'left', padding: '4px 8px 8px', color: '#4a5568', fontSize: '10px', fontWeight: '700' }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {selectedWO.parts?.map((p, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid #1e2330' }}>
+                        <td style={{ padding: '8px', color: '#90cdf4', fontFamily: 'monospace', fontSize: '11px' }}>{p.partNumber}</td>
+                        <td style={{ padding: '8px', color: '#e2e8f0' }}>{p.description}</td>
+                        <td style={{ padding: '8px', color: '#f6e05e', textAlign: 'center', fontWeight: '700' }}>{p.qty}</td>
+                        <td style={{ padding: '8px', color: '#718096' }}>{p.unit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>}
+
+            {woTab === 'procedure' && <div style={s.card}>
+              <div style={s.cardTitle}>Step-by-step — {selectedWO.procedure?.length} steps</div>
+              {selectedWO.procedure?.map((step, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', marginBottom: '14px', alignItems: 'flex-start' }}>
+                  <div style={{ minWidth: '26px', height: '26px', borderRadius: '50%', background: '#2b6cb0', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', flexShrink: 0 }}>{i + 1}</div>
+                  <div style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: '1.75', paddingTop: '3px' }}>{step.replace(/^Step \d+:\s*/i, '')}</div>
+                </div>
+              ))}
+            </div>}
+
+            {woTab === 'photos' && <>
+              {[{ label: 'Before job', photos: beforePhotos, setPhotos: setBeforePhotos, comment: beforeComment, setComment: setBeforeComment, placeholder: 'Condition before starting...' },
+                { label: 'During job', photos: generalPhotos, setPhotos: setGeneralPhotos, comment: generalComment, setComment: setGeneralComment, placeholder: 'Findings, issues, notes during the job...' },
+                { label: 'After job', photos: afterPhotos, setPhotos: setAfterPhotos, comment: afterComment, setComment: setAfterComment, placeholder: 'Final condition, torque values, notes for next time...' }
+              ].map(({ label, photos, setPhotos, comment, setComment, placeholder }) => (
+                <div key={label} style={{ ...s.card, marginBottom: '10px' }}>
+                  <div style={s.cardTitle}>{label}</div>
+                  <PhotoCapture photos={photos} onAdd={p => setPhotos(prev => [...prev, p])} onRemove={id => setPhotos(prev => prev.filter(p => p.id !== id))} />
+                  <div style={{ marginTop: '10px' }}>
+                    <label style={s.label}>Comments</label>
+                    <textarea style={{ ...s.textarea, height: '60px' }} placeholder={placeholder} value={comment} onChange={e => setComment(e.target.value)} />
+                  </div>
+                </div>
+              ))}
+            </>}
+
+            {woTab === 'close' && <>
+              <div style={{ ...s.card, marginBottom: '10px', background: '#142010', borderColor: '#276749' }}>
+                <div style={s.cardTitle}>Summary</div>
+                <div style={{ fontSize: '12px', color: '#a0aec0', lineHeight: '2' }}>
+                  <div>📋 <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{selectedWO.title}</span></div>
+                  <div>📸 {beforePhotos.length} before · {generalPhotos.length} during · {afterPhotos.length} after</div>
+                  <div>💬 {[beforeComment, generalComment, afterComment].filter(Boolean).length} of 3 comment fields filled</div>
+                </div>
+              </div>
+              <div style={{ ...s.card, marginBottom: '14px' }}>
+                <label style={s.label}>Odometer at completion (km)</label>
+                <input style={{ ...s.input, width: '160px' }} value={detailCloseKm} onChange={e => setDetailCloseKm(e.target.value)} />
+              </div>
+              {(beforePhotos.length + afterPhotos.length + generalPhotos.length === 0) && (
+                <div style={{ background: '#2d2315', border: '1px solid #c05621', borderRadius: '6px', padding: '10px 12px', marginBottom: '12px', fontSize: '11px', color: '#f6ad55' }}>⚠ No photos attached yet.</div>
+              )}
+              <button style={{ ...s.btnGreen, width: '100%', padding: '14px' }} onClick={closeWODetail}>✓ Close Work Order & Save to History</button>
+            </>}
+          </>}
+        </>}
+
+        {/* ── MILEAGE LOG ── */}
+        {tab === 'Mileage Log' && <>
+          <div style={{ marginBottom: '20px' }}>
+            <div style={s.secTitle}>Log odometer reading</div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ flex: 1 }}><label style={s.label}>Odometer (km)</label><input style={s.input} placeholder="e.g. 152,500" value={kmInput} onChange={e => setKmInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && logKm()} /></div>
+              <button style={{ ...s.btn, marginTop: '20px', height: '36px' }} onClick={logKm}>Log</button>
+            </div>
+          </div>
+          {state.weeklyLog.length === 0 && <div style={{ color: '#4a5568', textAlign: 'center', padding: '24px 0' }}>No mileage entries yet.</div>}
+          {state.weeklyLog.map((entry, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderRadius: '6px', marginBottom: '5px', background: '#13151f', border: '1px solid #1e2330' }}>
+              <div><span style={{ fontWeight: '600', color: '#90cdf4' }}>{fmtKm(entry.km)}</span><span style={{ marginLeft: '10px', fontSize: '10px', color: '#718096' }}>+{(entry.km - entry.prev).toLocaleString()} km</span></div>
+              <span style={{ fontSize: '10px', color: '#4a5568' }}>{fmtDate(entry.date)}</span>
+            </div>
+          ))}
+        </>}
+
+        {/* ── SERVICE HISTORY ── */}
+        {tab === 'Service History' && <>
+          <div style={s.secTitle}>All completed services — {state.maintenanceLog.length}</div>
+          {state.maintenanceLog.length === 0 && <div style={{ color: '#4a5568', textAlign: 'center', padding: '24px 0' }}>No services logged yet.</div>}
+          {state.maintenanceLog.map((entry, i) => (
+            <div key={i} style={{ ...s.card, marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                <span style={{ fontWeight: '700', fontSize: '13px', color: '#68d391' }}>{entry.title}</span>
+                <span style={s.badge('#276749')}>{entry.type}</span>
+              </div>
+              <div style={{ fontSize: '11px', color: '#718096', marginBottom: '4px' }}>@ {fmtKm(entry.doneKm)} · {fmtDate(entry.date)}</div>
+              {entry.comment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '3px' }}>{entry.comment}</div>}
+              {entry.beforeComment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '2px' }}><span style={{ color: '#4a5568' }}>Before: </span>{entry.beforeComment}</div>}
+              {entry.generalComment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '2px' }}><span style={{ color: '#4a5568' }}>During: </span>{entry.generalComment}</div>}
+              {entry.afterComment && <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '4px' }}><span style={{ color: '#4a5568' }}>After: </span>{entry.afterComment}</div>}
+              {(entry.totalPhotos > 0 || entry.photos?.length > 0) && (
+                <div style={{ marginTop: '6px' }}>
+                  <div style={{ fontSize: '10px', color: '#4a5568', marginBottom: '5px' }}>📸 {entry.photos?.length || ((entry.beforePhotos?.length || 0) + (entry.generalPhotos?.length || 0) + (entry.afterPhotos?.length || 0))} photo(s)</div>
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                    {[...(entry.photos || []), ...(entry.beforePhotos || []), ...(entry.generalPhotos || []), ...(entry.afterPhotos || [])].map((p, pi) => (
+                      <img key={pi} src={p.url} alt="" style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #2d3748' }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </>}
+
+        {/* ── AI ASSISTANT ── */}
+        {tab === 'AI Assistant' && (
+          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
+              {chat.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ maxWidth: '82%', padding: '10px 13px', borderRadius: '8px', fontSize: '12px', lineHeight: '1.65', background: msg.role === 'user' ? '#2b6cb0' : '#13151f', border: msg.role === 'user' ? 'none' : '1px solid #1e2330', color: '#e2e8f0', whiteSpace: 'pre-wrap' }}>
+                    {msg.role === 'assistant' && <div style={{ fontSize: '9px', color: '#4a5568', marginBottom: '4px', fontWeight: '700', letterSpacing: '0.08em' }}>AI ASSISTANT</div>}
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && <div style={{ display: 'flex' }}><div style={{ background: '#13151f', border: '1px solid #1e2330', borderRadius: '8px', padding: '10px 13px', color: '#4a5568', fontSize: '11px' }}>thinking...</div></div>}
+              <div ref={chatEndRef} />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input style={{ ...s.input, flex: 1 }} placeholder="Ask about your CR-V..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChat()} />
+              <button style={s.btn} onClick={sendChat} disabled={chatLoading}>Send</button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
