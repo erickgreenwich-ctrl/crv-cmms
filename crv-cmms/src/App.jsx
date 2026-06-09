@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { loadFromDrive, saveToDrive } from './driveSync'
+import { loadFromDrive, saveToDrive, signInGoogle, isSignedIn } from './driveSync'
 import { PRESET_WORK_ORDERS } from './workOrders'
 
 const VEHICLE = { year: 2018, make: 'Honda', model: 'CR-V', trim: 'AWD 1.5T', targetKm: 500000 }
@@ -192,10 +192,12 @@ export default function App() {
 
   useEffect(() => {
     async function init() {
-      setSyncStatus('syncing')
-      const d = await loadFromDrive()
-      if (d) { if (d.state) setState(d.state); if (d.intervals) setIntervals(d.intervals); setDriveEnabled(true); setSyncStatus('saved') }
-      else setSyncStatus('idle')
+      if (isSignedIn()) {
+        setSyncStatus('syncing')
+        const d = await loadFromDrive()
+        if (d) { if (d.state) setState(d.state); if (d.intervals) setIntervals(d.intervals); setDriveEnabled(true); setSyncStatus('saved') }
+        else setSyncStatus('idle')
+      }
     }
     init()
   }, [])
@@ -209,6 +211,22 @@ export default function App() {
     }
     return () => clearTimeout(saveTimer.current)
   }, [state, intervals, driveEnabled])
+
+  async function handleConnectDrive() {
+    setSyncStatus('connecting')
+    const ok = await signInGoogle()
+    if (ok) {
+      setDriveEnabled(true)
+      setSyncStatus('syncing')
+      const d = await loadFromDrive()
+      if (d) { if (d.state) setState(d.state); if (d.intervals) setIntervals(d.intervals) }
+      const payload = { vehicle: VEHICLE, state, intervals }
+      await saveToDrive(payload)
+      setSyncStatus('saved')
+    } else {
+      setSyncStatus('error')
+    }
+  }
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat])
 
@@ -372,12 +390,18 @@ KEY: 1.5T oil dilution risk in cold. CVT filter 25420-5LJ-003. PCV 17130-5A2-A01
 
       <div style={s.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={s.syncDot} />
+          <div style={s.syncDot} title={syncStatus} />
           <span style={s.logoText}>CR-V CMMS <span style={s.logoSub}>2018 AWD 1.5T</span></span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {overdueCount > 0 && <span style={s.badge('#c53030')}>{overdueCount} overdue</span>}
           {dueSoonCount > 0 && <span style={s.badge('#c05621')}>{dueSoonCount} soon</span>}
+          {!driveEnabled && (
+            <button onClick={handleConnectDrive} style={{ background: syncStatus === 'connecting' ? '#2d3748' : '#1a365d', color: '#90cdf4', border: '1px solid #2b6cb0', borderRadius: '5px', padding: '3px 8px', fontSize: '10px', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
+              {syncStatus === 'connecting' ? '⏳ Connecting...' : '☁ Drive'}
+            </button>
+          )}
+          {driveEnabled && <span style={{ fontSize: '10px', color: '#38a169', fontWeight: '600' }}>☁ ✓</span>}
           <span style={s.kmBadge}>{km.toLocaleString()} km</span>
         </div>
       </div>
