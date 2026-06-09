@@ -5,23 +5,45 @@ import { PRESET_WORK_ORDERS } from './workOrders'
 const VEHICLE = { year: 2018, make: 'Honda', model: 'CR-V', trim: 'AWD 1.5T', targetKm: 500000 }
 
 const DEFAULT_INTERVALS = [
-  { id: 'oil',       name: 'Engine Oil & Filter',           intervalKm: 5000,   lastDoneKm: 156000 },
-  { id: 'cvt',       name: 'CVT Fluid Pan-Drop',            intervalKm: 100000, lastDoneKm: 150000 },
-  { id: 'cvtfluid',  name: 'CVT Fluid Change',              intervalKm: 30000,  lastDoneKm: 150000 },
-  { id: 'diff',      name: 'Rear Differential Fluid',       intervalKm: 50000,  lastDoneKm: 120000 }, // due at 170,000 km
-  { id: 'brakes',    name: 'Brakes & Chassis Inspection',   intervalKm: 20000,  lastDoneKm: 150000 },
-  { id: 'coolant',   name: 'Engine Coolant',                intervalKm: 50000,  lastDoneKm: 120000 },
-  { id: 'brakefld',  name: 'Brake Fluid',                   intervalKm: 50000,  lastDoneKm: 130000 },
-  { id: 'belt',      name: 'Serpentine Belt',               intervalKm: 50000,  lastDoneKm: 150000 },
-  { id: 'sparkplug', name: 'Spark Plugs & Valve Adjust',    intervalKm: 100000, lastDoneKm: 100000 },
-  { id: 'pcv',       name: 'PCV Valve',                     intervalKm: 50000,  lastDoneKm: 150000 },
-  { id: 'airfilter', name: 'Engine Air Filter',             intervalKm: 10000,  lastDoneKm: 150000 },
-  { id: 'cabinair',  name: 'Cabin Air Filter',              intervalKm: 20000,  lastDoneKm: 150000 },
-  { id: 'tires',     name: 'Tire Rotation',                 intervalKm: 10000,  lastDoneKm: 150000 },
-  { id: 'alignment', name: 'Wheel Alignment',               intervalKm: 40000,  lastDoneKm: 150000 },
-  { id: 'fuel',      name: 'Fuel System Cleaner',           intervalKm: 10000,  lastDoneKm: 155000 },
-  { id: 'radiator',  name: 'Radiator Hoses',                intervalKm: 100000, lastDoneKm: 150000 },
-  { id: 'caliper',   name: 'Caliper Slides & Hardware',     intervalKm: 40000,  lastDoneKm: 130000 },
+  // ENGINE
+  { id: 'oil',        name: 'Engine Oil & Filter',           intervalKm: 5000,   lastDoneKm: 156000 },
+  { id: 'airfilter',  name: 'Engine Air Filter',             intervalKm: 10000,  lastDoneKm: 150000 },
+  { id: 'cabinair',   name: 'Cabin Air Filter',              intervalKm: 20000,  lastDoneKm: 150000 },
+  { id: 'sparkplug',  name: 'Spark Plugs & Valve Adjust',    intervalKm: 100000, lastDoneKm: 100000 },
+  { id: 'pcv',        name: 'PCV Valve',                     intervalKm: 130000, lastDoneKm: 150000 },
+  { id: 'fuel',       name: 'Fuel System Cleaner',           intervalKm: 10000,  lastDoneKm: 155000 },
+  { id: 'carbon',     name: 'Intake Valve Carbon Clean',     intervalKm: 80000,  lastDoneKm: 0      },
+  // BELT & PULLEYS
+  { id: 'belt',       name: 'Serpentine Belt',               intervalKm: 130000, lastDoneKm: 130000 },
+  { id: 'tensioner',  name: 'Belt Tensioner Pulley',         intervalKm: 130000, lastDoneKm: 0      },
+  { id: 'idler',      name: 'Idler Pulley',                  intervalKm: 130000, lastDoneKm: 0      },
+  // COOLING
+  { id: 'coolant',    name: 'Engine Coolant',                intervalKm: 50000,  lastDoneKm: 120000 },
+  { id: 'waterpump',  name: 'Water Pump (Proactive)',        intervalKm: 200000, lastDoneKm: 0      },
+  { id: 'thermostat', name: 'Thermostat (Proactive)',        intervalKm: 200000, lastDoneKm: 0      },
+  { id: 'radiator',   name: 'Radiator Hoses',                intervalKm: 100000, lastDoneKm: 150000 },
+  // TRANSMISSION & DRIVETRAIN
+  { id: 'cvt',        name: 'CVT Fluid Pan-Drop',            intervalKm: 100000, lastDoneKm: 150000 },
+  { id: 'cvtfluid',   name: 'CVT Fluid Change',              intervalKm: 30000,  lastDoneKm: 150000 },
+  { id: 'diff',       name: 'Rear Differential Fluid',       intervalKm: 50000,  lastDoneKm: 120000 },
+  { id: 'cvaxle',     name: 'CV Axle Boots Inspection',      intervalKm: 20000,  lastDoneKm: 150000 },
+  // BRAKES
+  { id: 'brakefld',   name: 'Brake Fluid',                   intervalKm: 50000,  lastDoneKm: 130000 },
+  { id: 'caliper',    name: 'Caliper Slides & Hardware',     intervalKm: 40000,  lastDoneKm: 130000 },
+  { id: 'brakes',     name: 'Brakes & Chassis Inspection',   intervalKm: 20000,  lastDoneKm: 150000 },
+  // SUSPENSION
+  { id: 'struts',     name: 'Struts & Shocks (Proactive)',   intervalKm: 200000, lastDoneKm: 0      },
+  { id: 'swaylinks',  name: 'Sway Bar End Links',            intervalKm: 50000,  lastDoneKm: 0      },
+  { id: 'swaybush',   name: 'Sway Bar Bushings',             intervalKm: 100000, lastDoneKm: 0      },
+  { id: 'cabushings', name: 'Control Arm Bushings',          intervalKm: 200000, lastDoneKm: 0      },
+  { id: 'bearings',   name: 'Wheel Bearings Check',          intervalKm: 50000,  lastDoneKm: 150000 },
+  { id: 'tierods',    name: 'Tie Rod Ends Check',            intervalKm: 50000,  lastDoneKm: 150000 },
+  { id: 'alignment',  name: 'Wheel Alignment',               intervalKm: 40000,  lastDoneKm: 150000 },
+  // ELECTRICAL
+  { id: 'alternator', name: 'Alternator Load Test',          intervalKm: 50000,  lastDoneKm: 100000 },
+  { id: 'battery',    name: 'Battery Load Test',             intervalKm: 20000,  lastDoneKm: 130000 },
+  // TIRES
+  { id: 'tires',      name: 'Tire Rotation',                 intervalKm: 10000,  lastDoneKm: 150000 },
 ]
 
 const INITIAL_HISTORY = [
