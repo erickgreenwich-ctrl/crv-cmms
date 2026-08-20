@@ -241,10 +241,20 @@ export default function App() {
       setDriveEnabled(true)
       setSyncStatus('syncing')
       const d = await loadFromDrive()
-      if (d) { if (d.state) setState(d.state); if (d.intervals) setIntervals(d.intervals) }
-      const payload = { vehicle: VEHICLE, state, intervals }
-      await saveToDrive(payload)
-      setSyncStatus('saved')
+      // MERGE FIX: only adopt Drive's data if Drive actually has more history than
+      // this device. Otherwise this device's local data is newer/richer — keep it
+      // and push it TO Drive instead of being overwritten BY Drive.
+      if (d && d.state && Array.isArray(d.state.maintenanceLog) &&
+          d.state.maintenanceLog.length >= state.maintenanceLog.length) {
+        setState(d.state)
+        if (d.intervals) setIntervals(d.intervals)
+        setSyncStatus('saved')
+      } else {
+        // This device has equal or more data than Drive — upload local as the source of truth.
+        const payload = { vehicle: VEHICLE, state, intervals }
+        await saveToDrive(payload)
+        setSyncStatus('saved')
+      }
     } else {
       setSyncStatus('error')
     }
