@@ -303,6 +303,8 @@ export default function App() {
   function confirmQuickClose(wo, e) {
     e.stopPropagation()
     const doneKm = parseInt(closeKm.replace(/,/g, ''), 10) || km
+    // ── SYNC FIX: push the completion km back into the matching Dashboard interval ──
+    setIntervals(prev => prev.map(i => i.id === wo.id ? { ...i, lastDoneKm: doneKm } : i))
     const record = {
       id: Date.now(), serviceId: wo.id, title: wo.title, type: 'work-order',
       doneKm, date: new Date().toISOString(), notes: wo.notes, parts: wo.parts,
@@ -336,6 +338,8 @@ export default function App() {
   function closeWODetail() {
     saveDraft()
     const doneKm = parseInt(detailCloseKm.replace(/,/g, ''), 10) || km
+    // ── SYNC FIX: push the completion km back into the matching Dashboard interval ──
+    setIntervals(prev => prev.map(i => i.id === selectedWO.id ? { ...i, lastDoneKm: doneKm } : i))
     const record = {
       id: Date.now(), serviceId: selectedWO.id, title: selectedWO.title, type: 'work-order',
       doneKm, date: new Date().toISOString(), notes: selectedWO.notes, parts: selectedWO.parts,
