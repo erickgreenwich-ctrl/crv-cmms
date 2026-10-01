@@ -18,7 +18,7 @@ const DEFAULT_INTERVALS = [
   { id: 'tensioner',  name: 'Belt Tensioner Pulley',         intervalKm: 130000, lastDoneKm: 0      },
   { id: 'idler',      name: 'Idler Pulley',                  intervalKm: 130000, lastDoneKm: 0      },
   // COOLING
-  { id: 'coolant',    name: 'Engine Coolant',                intervalKm: 50000,  lastDoneKm: 120000 },
+  { id: 'coolant',    name: 'Engine Coolant',                intervalKm: 100000, lastDoneKm: 120000 },
   { id: 'waterpump',  name: 'Water Pump (Proactive)',        intervalKm: 200000, lastDoneKm: 0      },
   { id: 'thermostat', name: 'Thermostat (Proactive)',        intervalKm: 200000, lastDoneKm: 0      },
   { id: 'radiator',   name: 'Radiator Hoses',                intervalKm: 100000, lastDoneKm: 150000 },
@@ -45,6 +45,19 @@ const DEFAULT_INTERVALS = [
   // TIRES
   { id: 'tires',      name: 'Tire Rotation',                 intervalKm: 10000,  lastDoneKm: 150000 },
 ]
+
+// Coolant and spark plugs are serviced together every 100,000 km.
+// Marking one done also marks the other done (linked services).
+const LINKED_INTERVAL_KM = 100000
+const LINKED_SERVICES = { coolant: 'sparkplug', sparkplug: 'coolant' }
+
+// Forward-only, one-time: sets the interval to 100,000 km ONCE per saved item (flag linkedSync),
+// so a later manual interval edit is never overwritten. lastDoneKm and history are untouched,
+// so past services and past due dates are not rewritten. Applied to saved (localStorage/Drive) data.
+function migrateIntervals(list) {
+  if (!Array.isArray(list)) return list
+  return list.map(i => LINKED_SERVICES[i.id] && !i.linkedSync ? { ...i, intervalKm: LINKED_INTERVAL_KM, linkedSync: true } : i)
+}
 
 const INITIAL_HISTORY = [
   { id: 'h-001', serviceId: 'brakes',    title: 'Brakes & Chassis Inspection', type: 'scheduled', doneKm: 150000, date: '2024-01-01T00:00:00.000Z', comment: 'Inspection at 150,000 km.', photos: [], totalPhotos: 0 },
@@ -171,7 +184,7 @@ export default function App() {
     return DEFAULT_STATE
   })
   const [intervals, setIntervals] = useState(() => {
-    try { const ls = localStorage.getItem('crv_cmms'); if (ls) { const p = JSON.parse(ls); if (p.intervals) return p.intervals } } catch {}
+    try { const ls = localStorage.getItem('crv_cmms'); if (ls) { const p = JSON.parse(ls); if (p.intervals) return migrateIntervals(p.intervals) } } catch {}
     return DEFAULT_INTERVALS
   })
 
@@ -217,7 +230,7 @@ export default function App() {
       if (isSignedIn()) {
         setSyncStatus('syncing')
         const d = await loadFromDrive()
-        if (d) { if (d.state) setState(d.state); if (d.intervals) setIntervals(d.intervals); setDriveEnabled(true); setSyncStatus('saved') }
+        if (d) { if (d.state) setState(d.state); if (d.intervals) setIntervals(migrateIntervals(d.intervals)); setDriveEnabled(true); setSyncStatus('saved') }
         else setSyncStatus('idle')
       }
     }
@@ -247,7 +260,7 @@ export default function App() {
       if (d && d.state && Array.isArray(d.state.maintenanceLog) &&
           d.state.maintenanceLog.length >= state.maintenanceLog.length) {
         setState(d.state)
-        if (d.intervals) setIntervals(d.intervals)
+        if (d.intervals) setIntervals(migrateIntervals(d.intervals))
         setSyncStatus('saved')
       } else {
         // This device has equal or more data than Drive — upload local as the source of truth.
@@ -278,6 +291,13 @@ export default function App() {
     setKmInput('')
   }
 
+  // Linked services (coolant + spark plugs): history entry for the partner service
+  function buildLinkedRecord(record, fromName) {
+    const linkedItem = intervals.find(i => i.id === LINKED_SERVICES[record.serviceId])
+    if (!linkedItem) return null
+    return { id: record.id + 1, serviceId: linkedItem.id, title: linkedItem.name, type: record.type, doneKm: record.doneKm, date: record.date, comment: `Done together with ${fromName} (linked service).`, photos: [], totalPhotos: 0 }
+  }
+
   // ── Scheduled item: start done panel ──
   function startDone(item) {
     setCompletingId(item.id)
@@ -288,7 +308,8 @@ export default function App() {
 
   function confirmDone(item) {
     const doneKm = parseInt(completeKm.replace(/,/g, ''), 10) || km
-    setIntervals(prev => prev.map(i => i.id === item.id ? { ...i, lastDoneKm: doneKm } : i))
+    const linkedId = LINKED_SERVICES[item.id]
+    setIntervals(prev => prev.map(i => (i.id === item.id || i.id === linkedId) ? { ...i, lastDoneKm: doneKm } : i))
     const record = {
       id: Date.now(),
       serviceId: item.id,
@@ -300,7 +321,8 @@ export default function App() {
       photos: completePhotos,
       totalPhotos: completePhotos.length,
     }
-    setState(s => ({ ...s, maintenanceLog: [record, ...s.maintenanceLog] }))
+    const linkedRecord = buildLinkedRecord(record, item.name)
+    setState(s => ({ ...s, maintenanceLog: linkedRecord ? [record, linkedRecord, ...s.maintenanceLog] : [record, ...s.maintenanceLog] }))
     setCompletingId(null); setCompleteKm(''); setCompleteComment(''); setCompletePhotos([])
   }
 
@@ -314,16 +336,17 @@ export default function App() {
     e.stopPropagation()
     const doneKm = parseInt(closeKm.replace(/,/g, ''), 10) || km
     // ── SYNC FIX: push the completion km back into the matching Dashboard interval ──
-    setIntervals(prev => prev.map(i => i.id === wo.id ? { ...i, lastDoneKm: doneKm } : i))
+    setIntervals(prev => prev.map(i => (i.id === wo.id || i.id === LINKED_SERVICES[wo.id]) ? { ...i, lastDoneKm: doneKm } : i))
     const record = {
       id: Date.now(), serviceId: wo.id, title: wo.title, type: 'work-order',
       doneKm, date: new Date().toISOString(), notes: wo.notes, parts: wo.parts,
       afterComment: closeComment, afterPhotos: closePhotos, totalPhotos: closePhotos.length,
     }
+    const linkedRec = buildLinkedRecord(record, wo.title)
     setState(s => ({
       ...s,
       workOrders: s.workOrders.map(w => w.id === wo.id ? { ...w, status: 'completed', completedKm: doneKm, completedAt: new Date().toISOString(), record } : w),
-      maintenanceLog: [record, ...s.maintenanceLog],
+      maintenanceLog: [record, ...(linkedRec ? [linkedRec] : []), ...s.maintenanceLog],
     }))
     setClosingWO(null); setClosePhotos([]); setCloseComment('')
   }
@@ -349,7 +372,7 @@ export default function App() {
     saveDraft()
     const doneKm = parseInt(detailCloseKm.replace(/,/g, ''), 10) || km
     // ── SYNC FIX: push the completion km back into the matching Dashboard interval ──
-    setIntervals(prev => prev.map(i => i.id === selectedWO.id ? { ...i, lastDoneKm: doneKm } : i))
+    setIntervals(prev => prev.map(i => (i.id === selectedWO.id || i.id === LINKED_SERVICES[selectedWO.id]) ? { ...i, lastDoneKm: doneKm } : i))
     const record = {
       id: Date.now(), serviceId: selectedWO.id, title: selectedWO.title, type: 'work-order',
       doneKm, date: new Date().toISOString(), notes: selectedWO.notes, parts: selectedWO.parts,
@@ -357,10 +380,11 @@ export default function App() {
       beforePhotos, generalPhotos, afterPhotos,
       totalPhotos: beforePhotos.length + generalPhotos.length + afterPhotos.length,
     }
+    const linkedRec = buildLinkedRecord(record, selectedWO.title)
     setState(s => ({
       ...s,
       workOrders: s.workOrders.map(w => w.id === selectedWO.id ? { ...w, status: 'completed', completedKm: doneKm, completedAt: new Date().toISOString(), draft: null, record } : w),
-      maintenanceLog: [record, ...s.maintenanceLog],
+      maintenanceLog: [record, ...(linkedRec ? [linkedRec] : []), ...s.maintenanceLog],
     }))
     setWoView('list'); setSelectedWO(null)
   }
