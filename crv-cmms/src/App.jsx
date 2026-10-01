@@ -18,7 +18,7 @@ const DEFAULT_INTERVALS = [
   { id: 'tensioner',  name: 'Belt Tensioner Pulley',         intervalKm: 130000, lastDoneKm: 0      },
   { id: 'idler',      name: 'Idler Pulley',                  intervalKm: 130000, lastDoneKm: 0      },
   // COOLING
-  { id: 'coolant',    name: 'Engine Coolant',                intervalKm: 100000, lastDoneKm: 120000 },
+  { id: 'coolant',    name: 'Engine Coolant',                intervalKm: 100000, lastDoneKm: 100000 },
   { id: 'waterpump',  name: 'Water Pump (Proactive)',        intervalKm: 200000, lastDoneKm: 0      },
   { id: 'thermostat', name: 'Thermostat (Proactive)',        intervalKm: 200000, lastDoneKm: 0      },
   { id: 'radiator',   name: 'Radiator Hoses',                intervalKm: 100000, lastDoneKm: 150000 },
@@ -51,12 +51,16 @@ const DEFAULT_INTERVALS = [
 const LINKED_INTERVAL_KM = 100000
 const LINKED_SERVICES = { coolant: 'sparkplug', sparkplug: 'coolant' }
 
-// Forward-only, one-time: sets the interval to 100,000 km ONCE per saved item (flag linkedSync),
-// so a later manual interval edit is never overwritten. lastDoneKm and history are untouched,
-// so past services and past due dates are not rewritten. Applied to saved (localStorage/Drive) data.
+// One-time, per saved item (flag linkedSync), so later manual edits are never overwritten:
+//  - sets the interval to 100,000 km
+//  - aligns the due point so coolant and spark plugs fall due together: both use the EARLIER
+//    of their two last-done values as the anchor (never later than reality).
+// History records are untouched. Applied to saved (localStorage/Drive) data.
 function migrateIntervals(list) {
   if (!Array.isArray(list)) return list
-  return list.map(i => LINKED_SERVICES[i.id] && !i.linkedSync ? { ...i, intervalKm: LINKED_INTERVAL_KM, linkedSync: true } : i)
+  if (!list.some(i => LINKED_SERVICES[i.id] && !i.linkedSync)) return list
+  const anchor = Math.min(...list.filter(i => LINKED_SERVICES[i.id]).map(i => i.lastDoneKm))
+  return list.map(i => LINKED_SERVICES[i.id] && !i.linkedSync ? { ...i, intervalKm: LINKED_INTERVAL_KM, lastDoneKm: anchor, linkedSync: true } : i)
 }
 
 const INITIAL_HISTORY = [
